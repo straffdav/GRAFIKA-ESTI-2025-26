@@ -39,9 +39,9 @@
             left: 0;
             width: 140px; 
             height: 140px;
-            pointer-events: none; /* Crucial so it doesn't block clicks */
+            pointer-events: none;
             z-index: 9999999;
-            transform: translate(-50%, -50%); /* Center on mouse */
+            transform: translate(-50%, -50%);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -56,7 +56,6 @@
             pointer-events: none;
         }
 
-        /* WRAPPER: Handles scroll rotation without fighting GSAP hover rotation */
         #cursor-spin-wrapper {
             position: relative;
             width: 18px;
@@ -90,7 +89,6 @@
 
         .c-horizontal { width: 100%; height: 1.5px; top: 50%; left: 0; transform: translateY(-50%); }
         .c-vertical { width: 1.5px; height: 100%; top: 0; left: 50%; transform: translateX(-50%); }
-
 
         /* --- LOADING SCREEN STYLES --- */
         #loading-overlay {
@@ -135,7 +133,6 @@
             text-align: center;
         }
 
-        /* --- PAGE TRANSITION CURTAIN --- */
         .transition-curtain {
             position: absolute;
             top: 100%;
@@ -147,7 +144,6 @@
             pointer-events: none;
         }
 
-        /* --- MASKED REVEAL & TEXT STYLES --- */
         .text-group {
             display: flex;
             flex-direction: column;
@@ -196,7 +192,7 @@
             color: #000;
         }
 
-        /* Background Dither Noise Canvas */
+        /* WebGL Background Canvas */
         #bg-canvas {
             position: fixed;
             top: 0;
@@ -208,7 +204,7 @@
             opacity: 0.6; 
         }
 
-        /* WebGL Canvas */
+        /* WebGL Image Effects Canvas */
         #webgl-canvas {
             position: fixed;
             top: 0;
@@ -230,15 +226,14 @@
             z-index: 10000;
         }
 
-        /* Top Left Logo */
         .logo-container {
             position: absolute;
             top: 2rem;
             left: 2rem;
             display: flex;
-            flex-direction: column; /* Stack them vertically */
-            align-items: flex-end; /* Aligns the switch to the right edge of the logo */
-            gap: 1rem; /* Gap between logo and switch */
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 1rem;
             pointer-events: auto;
         }
 
@@ -248,7 +243,6 @@
             display: block;
         }
 
-        /* Top Right Logo - Stuck flush to the corner */
         .top-right-logo-container {
             position: absolute;
             top: 0;
@@ -271,7 +265,7 @@
             background: transparent;
             color: #fff;
             height: 22px; 
-            width: 90px; /* Aligns perfectly with the foot of the 'k' */
+            width: 90px;
             pointer-events: auto;
             font-family: inherit;
             padding: 0;
@@ -319,32 +313,16 @@
             line-height: 20px;
         }
 
-        .text-on {
-            left: 22px;
-            transform: translateX(0);
-        }
-
-        .text-off {
-            left: 0;
-            transform: translateX(-68px); 
-        }
+        .text-on { left: 22px; transform: translateX(0); }
+        .text-off { left: 0; transform: translateX(-68px); }
 
         .sound-switch.is-off .switch-block {
             transform: translateX(66px); 
             background-color: transparent;
         }
-
-        .sound-switch.is-off .switch-block::after {
-            transform: translateX(-22px); 
-        }
-
-        .sound-switch.is-off .text-on {
-            transform: translateX(68px); 
-        }
-
-        .sound-switch.is-off .text-off {
-            transform: translateX(0); 
-        }
+        .sound-switch.is-off .switch-block::after { transform: translateX(-22px); }
+        .sound-switch.is-off .text-on { transform: translateX(68px); }
+        .sound-switch.is-off .text-off { transform: translateX(0); }
 
         /* Bottom Bar UI */
         .bottom-bar {
@@ -356,36 +334,23 @@
             pointer-events: auto;
         }
 
-        .bottom-bar.is-loading {
-            position: absolute;
-            bottom: 100%; 
-            left: 0;
-        }
-
-        .bottom-bar.is-fixed {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            z-index: 10000;
-        }
+        .bottom-bar.is-loading { position: absolute; bottom: 100%; left: 0; }
+        .bottom-bar.is-fixed { position: fixed; bottom: 0; left: 0; z-index: 10000; }
 
         .bottom-giant-text {
-            flex: 0 0 auto; /* Force container to exactly hug the image width */
+            flex: 0 0 auto;
             display: flex;
             border-right: 1.5px solid #fff;
             height: 100%;
             overflow: hidden;
         }
 
-        .bottom-logo-picture {
-            height: 100%;
-            display: block;
-        }
+        .bottom-logo-picture { height: 100%; display: block; }
 
         .bottom-logo-img {
             height: 100%;
             width: auto;
-            max-width: none; /* Removes restriction so the container snaps strictly to the image */
+            max-width: none;
             object-fit: contain;
             display: block;
         }
@@ -410,37 +375,30 @@
             white-space: nowrap;
         }
 
-        .menu-item:last-child {
-            border-bottom: none;
-        }
+        .menu-item:last-child { border-bottom: none; }
 
         /* --- CLICKABLE MENU ITEM HOVER INVERT --- */
         .clickable-menu-item {
             cursor: none; 
             text-decoration: none; 
             color: inherit;
-            background-color: #000; /* Solid base for difference blending */
-            isolation: isolate; /* Prevents blend-mode bugs with CSS animations */
+            background-color: #000; 
+            isolation: isolate; 
         }
 
         .clickable-menu-item::after {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             background-color: #fff;
             mix-blend-mode: difference;
             opacity: 0;
             transition: opacity 0.3s ease;
             pointer-events: none; 
-            z-index: 20; /* Keep it above the marquee images */
+            z-index: 20; 
         }
 
-        .clickable-menu-item:hover::after {
-            opacity: 1;
-        }
+        .clickable-menu-item:hover::after { opacity: 1; }
 
         /* --- INFINITE SCROLLING MARQUEE --- */
         .menu-item.marquee-container {
@@ -473,7 +431,6 @@
             100% { transform: translateX(-50%); } 
         }
 
-        /* --- STATIC ROW (NO ANIMATION) FOR AZ ISKOLÁRÓL --- */
         .static-track {
             display: flex;
             align-items: stretch;
@@ -489,27 +446,8 @@
             display: block;
         }
 
-        .menu-item.multi-line {
-            flex-direction: column;
-            align-items: flex-start;
-            justify-content: center;
-            gap: 2px;
-        }
-
-        .menu-item.highlight {
-            background-color: #fff;
-            color: #000;
-            font-weight: 600;
-        }
-
-        /* --- JELENTKEZZ REVERSE MARQUEE --- */
-        .menu-item.jelentkezz-item {
-            border-bottom: none;
-        }
-
-        .menu-item.jelentkezz-item .marquee-track {
-            animation: scrollMarqueeReverse 60s linear infinite;
-        }
+        .menu-item.jelentkezz-item { border-bottom: none; }
+        .menu-item.jelentkezz-item .marquee-track { animation: scrollMarqueeReverse 60s linear infinite; }
 
         @keyframes scrollMarqueeReverse {
             0% { transform: translateX(-50%); }
@@ -531,44 +469,33 @@
             width: 100%;
         }
 
-        .lines-row:last-child {
-            border-bottom: none;
-        }
+        .lines-row:last-child { border-bottom: none; }
 
+        /* OPTIMIZATION: Replaced div-based lines with a 2D canvas for performance */
         .vertical-lines-overlay {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
-        }
-
-        .v-line {
-            position: absolute;
-            top: 0; 
-            bottom: 0; 
-            width: 1.5px;
-            background-color: #fff;
-            will-change: transform;
         }
 
         /* DOM Shadow Caster */
         #gallery {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
+            top: 0; left: 0; width: 100vw; height: 100vh;
             z-index: 1; 
         }
 
         .gallery-item {
             position: absolute;
-            top: 0;
-            left: 0;
+            top: 0; left: 0;
+            
+            /* OPTIMIZATION: Fixed base size. We use transform: scale() instead of 
+               altering width/height to avoid Layout Reflow calculation on every frame */
+            width: 800px;
+            height: 533px; 
+            
             transform-origin: center center;
-            will-change: transform;
+            will-change: transform, opacity;
             background-color: rgba(0, 0, 0, 1); 
             box-shadow: 0px 4px 44.3px 35px rgba(0, 0, 0, 0.55);
             transition: box-shadow 0.3s ease;
@@ -581,15 +508,12 @@
             display: block;
         }
 
-        .gallery-item:hover {
-            box-shadow: 0px 8px 50px 40px rgba(0, 0, 0, 0.65);
-        }
+        .gallery-item:hover { box-shadow: 0px 8px 50px 40px rgba(0, 0, 0, 0.65); }
 
         /* --- FLOATING CURSOR TOOLTIP --- */
         .floating-tooltip {
             position: fixed;
-            top: 0;
-            left: 0;
+            top: 0; left: 0;
             pointer-events: none;
             z-index: 99999;
             opacity: 0;
@@ -608,95 +532,46 @@
             will-change: clip-path;
         }
 
-        .tt-top-row {
-            padding: 16px 20px 8px 20px;
-        }
-
-        .tt-bottom-row {
-            display: flex;
-            align-items: stretch;
-            justify-content: space-between;
-        }
-
-        .tt-category-wrap {
-            padding: 0 24px 16px 20px;
-            display: flex;
-            align-items: center;
-            flex: 1;
-        }
-        
-        .tt-text-mask {
-            overflow: hidden; 
-        }
+        .tt-top-row { padding: 16px 20px 8px 20px; }
+        .tt-bottom-row { display: flex; align-items: stretch; justify-content: space-between; }
+        .tt-category-wrap { padding: 0 24px 16px 20px; display: flex; align-items: center; flex: 1; }
+        .tt-text-mask { overflow: hidden; }
 
         .tt-title {
-            font-size: 20px;
-            font-weight: 400; 
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            line-height: 1.2;
-            white-space: normal; 
-            word-wrap: break-word;
-            will-change: transform, opacity;
+            font-size: 20px; font-weight: 400; text-transform: uppercase;
+            letter-spacing: 0.5px; line-height: 1.2; white-space: normal; 
+            word-wrap: break-word; will-change: transform, opacity;
         }
 
         .tt-category {
-            font-size: 20px;
-            font-weight: 400; 
-            line-height: 1;
-            white-space: nowrap;
-            will-change: transform, opacity;
+            font-size: 20px; font-weight: 400; line-height: 1;
+            white-space: nowrap; will-change: transform, opacity;
         }
 
         .tt-arrow-box {
-            background-color: #000;
-            padding: 0 28px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            flex-shrink: 0; 
-            pointer-events: auto;
-            cursor: pointer;
+            background-color: #000; padding: 0 28px; display: flex;
+            align-items: center; justify-content: center; overflow: hidden;
+            flex-shrink: 0; pointer-events: auto; cursor: pointer;
             box-shadow: inset 0 0 0 0px #000;
             transition: background-color 0.1s ease, box-shadow 0.1s ease;
         }
 
-        .tt-arrow-box:active {
-            background-color: #fff;
-            box-shadow: inset 0 0 0 2px #000;
-        }
+        .tt-arrow-box:active { background-color: #fff; box-shadow: inset 0 0 0 2px #000; }
 
         .tt-arrow {
-            position: relative;
-            width: 80px;
-            height: 1px;
-            background-color: #fff;
-            will-change: transform, opacity;
-            transition: background-color 0.1s ease;
+            position: relative; width: 80px; height: 1px; background-color: #fff;
+            will-change: transform, opacity; transition: background-color 0.1s ease;
         }
         
-        .tt-arrow-box:active .tt-arrow {
-            background-color: #000;
-        }
+        .tt-arrow-box:active .tt-arrow { background-color: #000; }
 
         .tt-arrow::after {
-            content: '';
-            position: absolute;
-            right: 0;
-            top: 50%;
-            width: 10px;
-            height: 10px;
-            border-top: 1px solid #fff;
-            border-right: 1px solid #fff;
-            transform: translateY(-50%) rotate(45deg);
-            transition: border-color 0.1s ease;
+            content: ''; position: absolute; right: 0; top: 50%;
+            width: 10px; height: 10px; border-top: 1px solid #fff; border-right: 1px solid #fff;
+            transform: translateY(-50%) rotate(45deg); transition: border-color 0.1s ease;
         }
 
-        .tt-arrow-box:active .tt-arrow::after {
-            border-top-color: #000;
-            border-right-color: #000;
-        }
+        .tt-arrow-box:active .tt-arrow::after { border-top-color: #000; border-right-color: #000; }
 
         @media (max-width: 768px) {
             #custom-cursor { display: none !important; }
@@ -732,54 +607,25 @@
             <div class="bottom-giant-text">
                 <picture class="bottom-logo-picture">
                     <source media="(max-width: 768px)" srcset="grafikaesti_phone.svg">
-                    <img src="grafikaesti.svg" alt="Grafika Esti" class="bottom-logo-img">
+                    <img src="grafikaesti.svg" alt="Grafika Esti" class="bottom-logo-img" onerror="this.src='https://placehold.co/400x100/000/fff?text=GRAFIKA+ESTI'">
                 </picture>
             </div>
             <div class="bottom-menu">
                 <a href="#" class="menu-item marquee-container clickable-menu-item">
                     <div class="marquee-track">
-                        <!-- First Set -->
-                        <img src="2026.svg" alt="2026" class="marquee-item">
-                        <img src="2026.svg" alt="2026" class="marquee-item">
-                        <img src="2026.svg" alt="2026" class="marquee-item">
-                        <img src="2026.svg" alt="2026" class="marquee-item">
-                        <img src="2026.svg" alt="2026" class="marquee-item">
-                        <img src="2026.svg" alt="2026" class="marquee-item">
-                        <!-- Duplicate Set for Seamless Loop -->
-                        <img src="2026.svg" alt="2026" class="marquee-item">
-                        <img src="2026.svg" alt="2026" class="marquee-item">
-                        <img src="2026.svg" alt="2026" class="marquee-item">
-                        <img src="2026.svg" alt="2026" class="marquee-item">
-                        <img src="2026.svg" alt="2026" class="marquee-item">
-                        <img src="2026.svg" alt="2026" class="marquee-item">
+                        <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                        <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
                     </div>
                 </a>
                 <a href="#" class="menu-item marquee-container clickable-menu-item">
                     <div class="static-track">
-                        <img src="aziskolarol.gif" alt="Az iskoláról" class="static-item">
-                        <img src="aziskolarol.gif" alt="Az iskoláról" class="static-item">
-                        <img src="aziskolarol.gif" alt="Az iskoláról" class="static-item">
-                        <img src="aziskolarol.gif" alt="Az iskoláról" class="static-item">
-                        <img src="aziskolarol.gif" alt="Az iskoláról" class="static-item">
-                        <img src="aziskolarol.gif" alt="Az iskoláról" class="static-item">
+                        <img src="aziskolarol.gif" alt="Az iskoláról" class="static-item" onerror="this.style.display='none'">
                     </div>
                 </a>
                 <a href="#" class="menu-item marquee-container jelentkezz-item clickable-menu-item">
                     <div class="marquee-track">
-                        <!-- First Set -->
-                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item">
-                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item">
-                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item">
-                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item">
-                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item">
-                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item">
-                        <!-- Duplicate Set for Seamless Loop -->
-                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item">
-                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item">
-                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item">
-                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item">
-                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item">
-                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item">
+                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
                     </div>
                 </a>
             </div>
@@ -787,29 +633,22 @@
                 <div class="lines-row"></div>
                 <div class="lines-row"></div>
                 <div class="lines-row"></div>
-                <div class="vertical-lines-overlay" id="vertical-lines"></div>
+                <!-- OPTIMIZATION: Switched to canvas for massive performance gains -->
+                <canvas class="vertical-lines-overlay" id="vertical-lines-canvas"></canvas>
             </div>
         </div>
         <div class="loading-black-bg">
             <div class="loading-prompt-content" id="loading-prompt-content">
                 <div class="text-group">
-                    <div class="text-mask">
-                        <div class="loading-text delayed-reveal scramble-text" data-text="Az oldal hanggal működik.">Az oldal hanggal működik.</div>
-                    </div>
-                    <div class="text-mask">
-                        <div class="loading-text delayed-reveal scramble-text" data-text="Később bármikor némíthatod.">Később bármikor némíthatod.</div>
-                    </div>
+                    <div class="text-mask"><div class="loading-text delayed-reveal scramble-text" data-text="Az oldal hanggal működik.">Az oldal hanggal működik.</div></div>
+                    <div class="text-mask"><div class="loading-text delayed-reveal scramble-text" data-text="Később bármikor némíthatod.">Később bármikor némíthatod.</div></div>
                 </div>
                 
                 <video id="loading-video" src="LoadingLogo.mp4" muted playsinline></video>
                 
                 <div class="text-group">
-                    <div class="text-mask">
-                        <div class="loading-text delayed-reveal scramble-text" data-text="Fogadd szeretettel a Kreatív és Kézművesipari Technikum">Fogadd szeretettel a Kreatív és Kézművesipari Technikum</div>
-                    </div>
-                    <div class="text-mask">
-                        <div class="loading-text delayed-reveal scramble-text" data-text="2025-26-os esti osztályának vizsgamunkáit!">2025-26-os esti osztályának vizsgamunkáit!</div>
-                    </div>
+                    <div class="text-mask"><div class="loading-text delayed-reveal scramble-text" data-text="Fogadd szeretettel a Kreatív és Kézművesipari Technikum">Fogadd szeretettel a Kreatív és Kézművesipari Technikum</div></div>
+                    <div class="text-mask"><div class="loading-text delayed-reveal scramble-text" data-text="2025-26-os esti osztályának vizsgamunkáit!">2025-26-os esti osztályának vizsgamunkáit!</div></div>
                 </div>
                 
                 <div class="text-mask" style="margin-top: 1rem;">
@@ -826,17 +665,11 @@
     <div class="floating-tooltip" id="cursor-tooltip">
         <div class="tooltip-mask" id="tt-mask">
             <div class="tt-top-row">
-                <div class="tt-text-mask">
-                    <div class="tt-title" id="tt-title">Babolcsai Patrícia</div>
-                </div>
+                <div class="tt-text-mask"><div class="tt-title" id="tt-title">Name</div></div>
             </div>
             <div class="tt-bottom-row">
-                <div class="tt-category-wrap tt-text-mask">
-                    <div class="tt-category" id="tt-category">Metahuman Academy</div>
-                </div>
-                <div class="tt-arrow-box">
-                    <div class="tt-arrow" id="tt-arrow"></div>
-                </div>
+                <div class="tt-category-wrap tt-text-mask"><div class="tt-category" id="tt-category">Category</div></div>
+                <div class="tt-arrow-box"><div class="tt-arrow" id="tt-arrow"></div></div>
             </div>
         </div>
     </div>
@@ -845,7 +678,7 @@
     <div class="ui-layer">
         <div class="logo-container">
             <a href="https://kreativtechnikum.hu/" class="clickable-element">
-                <img src="logo.svg" alt="Kreatív és Kézművesipari Technikum" class="logo-img" onerror="this.style.display='none'">
+                <img src="logo.svg" alt="Kreatív és Kézművesipari Technikum" class="logo-img" onerror="this.src='https://placehold.co/100x36/000/fff?text=LOGO'">
             </a>
             <button class="sound-switch is-on" id="sound-toggle">
                 <div class="switch-block"></div>
@@ -855,12 +688,6 @@
                 </div>
             </button>
         </div>
-        
-        <div class="top-right-logo-container">
-            <a href="https://www.bkszc.hu/" class="clickable-element">
-                <img src="bkscLogo.svg" alt="BKSZC" class="bkszc-logo-img" onerror="this.style.display='none'">
-            </a>
-        </div>
     </div>
 
     <script>
@@ -868,30 +695,24 @@
             
             let isDesktop = window.innerWidth >= 768;
 
-            // --- AUDIO UNLOCK & CONTINUOUS MUSIC LOGIC ---
+            // --- AUDIO SETUP ---
             let isSoundEnabled = sessionStorage.getItem('isSoundEnabled') !== 'false';
             let isAudioUnlocked = false; 
-
             const bgMusic = new Audio('chime.mp3');
             bgMusic.loop = true; 
             bgMusic.volume = 0.4; 
 
             const savedTime = sessionStorage.getItem('bgMusicTime');
-            if (savedTime !== null) {
-                bgMusic.currentTime = parseFloat(savedTime);
-            }
-
+            if (savedTime !== null) bgMusic.currentTime = parseFloat(savedTime);
             window.addEventListener('beforeunload', () => {
                 sessionStorage.setItem('bgMusicTime', bgMusic.currentTime);
                 sessionStorage.setItem('isSoundEnabled', isSoundEnabled);
             });
 
-            // --- AUDIO POOLS FOR SFX ---
             const tickSoundURL = 'ScreenRecording_08-09-2026 20-40-07_1.mp3'; 
             const audioPool = [];
             const poolSize = 10; 
             let poolIndex = 0;
-
             for (let i = 0; i < poolSize; i++) {
                 const a = new Audio(tickSoundURL);
                 a.volume = 0.1; 
@@ -902,43 +723,24 @@
             const tingAudioPool = [];
             const tingPoolSize = 5; 
             let tingPoolIndex = 0;
-
             for (let i = 0; i < tingPoolSize; i++) {
                 const a = new Audio(tingSoundURL);
                 a.volume = 0.3; 
-                if ('preservesPitch' in a) a.preservesPitch = false;
-                if ('mozPreservesPitch' in a) a.mozPreservesPitch = false;
-                if ('webkitPreservesPitch' in a) a.webkitPreservesPitch = false;
                 tingAudioPool.push(a);
             }
 
             const tryUnlockAudio = () => {
                 if (isAudioUnlocked) return;
-                
-                audioPool.forEach(a => {
-                    const p = a.play();
-                    if (p !== undefined) {
-                        p.then(() => { a.pause(); a.currentTime = 0; }).catch(() => {});
-                    }
-                });
-                tingAudioPool.forEach(a => {
-                    const p = a.play();
-                    if (p !== undefined) {
-                        p.then(() => { a.pause(); a.currentTime = 0; }).catch(() => {});
-                    }
-                });
+                audioPool.forEach(a => { const p = a.play(); if (p) p.then(() => { a.pause(); a.currentTime = 0; }).catch(() => {}); });
+                tingAudioPool.forEach(a => { const p = a.play(); if (p) p.then(() => { a.pause(); a.currentTime = 0; }).catch(() => {}); });
 
                 if (isSoundEnabled) {
                     const bgPromise = bgMusic.play();
                     if (bgPromise !== undefined) {
                         bgPromise.then(() => {
                             isAudioUnlocked = true;
-                            ['pointerdown', 'touchstart', 'keydown', 'wheel', 'mousemove'].forEach(e => {
-                                window.removeEventListener(e, tryUnlockAudio);
-                            });
-                        }).catch(() => {
-                            isAudioUnlocked = false; 
-                        });
+                            ['pointerdown', 'touchstart', 'keydown', 'wheel', 'mousemove'].forEach(e => window.removeEventListener(e, tryUnlockAudio));
+                        }).catch(() => { isAudioUnlocked = false; });
                     }
                 } else {
                     isAudioUnlocked = true; 
@@ -946,24 +748,16 @@
             };
 
             if (isSoundEnabled) {
-                bgMusic.play().then(() => {
-                    isAudioUnlocked = true;
-                }).catch(() => {
-                    ['pointerdown', 'touchstart', 'keydown', 'wheel', 'mousemove'].forEach(e => {
-                        window.addEventListener(e, tryUnlockAudio, { passive: true });
-                    });
+                bgMusic.play().then(() => { isAudioUnlocked = true; }).catch(() => {
+                    ['pointerdown', 'touchstart', 'keydown', 'wheel', 'mousemove'].forEach(e => window.addEventListener(e, tryUnlockAudio, { passive: true }));
                 });
             }
 
             function playTingSound(pitchRate = 1.0) {
                 if (!isAudioUnlocked || !isSoundEnabled) return;
                 const a = tingAudioPool[tingPoolIndex];
-                
-                a.playbackRate = pitchRate; 
-                a.currentTime = 0; 
-                
-                const p = a.play();
-                if (p !== undefined) p.catch(() => {}); 
+                a.playbackRate = pitchRate; a.currentTime = 0; 
+                const p = a.play(); if (p) p.catch(() => {}); 
                 tingPoolIndex = (tingPoolIndex + 1) % tingPoolSize; 
             }
             
@@ -971,33 +765,27 @@
                 if (!isAudioUnlocked || !isSoundEnabled) return;
                 const a = audioPool[poolIndex];
                 a.currentTime = 0; 
-                const p = a.play();
-                if (p !== undefined) p.catch(() => {}); 
+                const p = a.play(); if (p) p.catch(() => {}); 
                 poolIndex = (poolIndex + 1) % poolSize; 
             }
 
             const soundToggleBtn = document.getElementById('sound-toggle');
-            if (!isSoundEnabled) {
-                soundToggleBtn.classList.remove('is-on');
-                soundToggleBtn.classList.add('is-off');
-            }
+            if (!isSoundEnabled) { soundToggleBtn.classList.remove('is-on'); soundToggleBtn.classList.add('is-off'); }
 
             soundToggleBtn.addEventListener('click', () => {
                 tryUnlockAudio();
                 isSoundEnabled = !isSoundEnabled;
                 sessionStorage.setItem('isSoundEnabled', isSoundEnabled);
                 if (isSoundEnabled) {
-                    soundToggleBtn.classList.remove('is-off');
-                    soundToggleBtn.classList.add('is-on');
+                    soundToggleBtn.classList.remove('is-off'); soundToggleBtn.classList.add('is-on');
                     bgMusic.play().catch(() => {});
                 } else {
-                    soundToggleBtn.classList.remove('is-on');
-                    soundToggleBtn.classList.add('is-off');
+                    soundToggleBtn.classList.remove('is-on'); soundToggleBtn.classList.add('is-off');
                     bgMusic.pause();
                 }
             });
 
-            // --- CUSTOM CURSOR LOGIC ---
+            // --- CUSTOM CURSOR ---
             const customCursor = document.getElementById('custom-cursor');
             const cursorIcon = document.getElementById('cursor-icon');
             const cPlus2 = document.getElementById('c-plus-2');
@@ -1005,7 +793,7 @@
             let hoverTimeline = null;
             
             window.addEventListener('mousemove', (e) => {
-                if(isDesktop) customCursor.style.transform = `translate3d(${e.clientX - 70}px, ${e.clientY - 70}px, 0)`;
+                if(isDesktop) customCursor.style.transform = `translate(${e.clientX - 70}px, ${e.clientY - 70}px)`;
             });
 
             document.addEventListener('mouseover', (e) => {
@@ -1014,10 +802,8 @@
                 if (target && !isCursorHovering) {
                     isCursorHovering = true;
                     gsap.to(cursorDitherMaterial.uniforms.uHoverState, { value: 1, duration: 0.3, ease: "power2.out" });
-                    
                     if (hoverTimeline) hoverTimeline.kill();
                     hoverTimeline = gsap.timeline();
-                    
                     hoverTimeline.to(cPlus2, { rotation: 45, duration: 0.15, ease: "back.out(2)" })
                     .to(cursorIcon, { rotation: "+=360", duration: 3, repeat: -1, ease: "linear" });
                 }
@@ -1028,15 +814,11 @@
                 const target = e.target.closest('a, button, .tt-arrow-box, .menu-item.highlight, .sound-switch');
                 if (target && isCursorHovering) {
                     if (e.relatedTarget && e.relatedTarget.closest('a, button, .tt-arrow-box, .menu-item.highlight, .sound-switch')) return;
-                    
                     isCursorHovering = false;
                     gsap.to(cursorDitherMaterial.uniforms.uHoverState, { value: 0, duration: 0.3, ease: "power2.out" });
-                    
                     if (hoverTimeline) hoverTimeline.kill();
-                    
                     let currentRot = gsap.getProperty(cursorIcon, "rotation") || 0;
                     let targetRot = Math.round(currentRot / 90) * 90;
-                    
                     gsap.to(cursorIcon, { rotation: targetRot, duration: 0.3, ease: "power2.out", overwrite: "auto" });
                     gsap.to(cPlus2, { rotation: 0, duration: 0.3, ease: "power2.out", overwrite: "auto" });
                 }
@@ -1046,13 +828,14 @@
             const cursorCanvas = document.getElementById('cursor-dither-canvas');
             const cursorRenderer = new THREE.WebGLRenderer({ canvas: cursorCanvas, alpha: true, antialias: false });
             cursorRenderer.setSize(140, 140);
-            cursorRenderer.setPixelRatio(1); // Explicitly lock pixel ratio for cursor
             const cursorScene = new THREE.Scene();
             const cursorCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
             
             const cursorDitherMaterial = new THREE.ShaderMaterial({
                 vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }`,
+                // OPTIMIZATION: Added precision modifier
                 fragmentShader: `
+                    precision mediump float; 
                     uniform float uTime;
                     uniform float uHoverState;
                     uniform float uScrollVelocity; 
@@ -1068,9 +851,7 @@
                     void main() {
                         vec2 center = vec2(0.5);
                         float dist = distance(vUv, center);
-                        
                         float baseRadius = mix(0.18, 0.40, uHoverState);
-                        
                         float shrink = clamp(uScrollVelocity * 0.015, 0.0, 0.14);
                         baseRadius = max(0.04, baseRadius - shrink);
                         
@@ -1080,12 +861,10 @@
                         if(dist > radius + 0.1) discard; 
                         
                         float intensity = 1.0 - smoothstep(radius - 0.05, radius + 0.1, dist);
-                        
                         float bayerVal = bayer8x8(gl_FragCoord.xy * 0.5); 
                         float dithered = step(bayerVal, intensity);
                         
                         if(dithered < 0.1) discard; 
-                        
                         gl_FragColor = vec4(0.65, 0.65, 0.65, 0.7); 
                     }
                 `,
@@ -1094,12 +873,11 @@
                     uHoverState: { value: 0 },
                     uScrollVelocity: { value: 0 } 
                 },
-                transparent: true,
-                precision: 'lowp' // Optimization: low precision perfectly fine for cursor
+                transparent: true
             });
             cursorScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), cursorDitherMaterial));
 
-            // --- LOADING SCREEN LOGIC ---
+            // --- LOADING LOGIC ---
             let isAppLoaded = false;
             let isTransitioning = false;
             let interactionsEnabled = false; 
@@ -1123,32 +901,18 @@
                     uiLayer.appendChild(bottomBar);
                     bottomBar.classList.remove('is-loading');
                     bottomBar.classList.add('is-fixed');
-                    
                     if (overlay) overlay.remove(); 
                     
                     const curtain = document.createElement('div');
                     curtain.className = 'transition-curtain';
-                    curtain.style.position = 'absolute';
-                    curtain.style.top = '100%';
-                    curtain.style.left = '0';
-                    curtain.style.width = '100vw';
-                    curtain.style.height = '120vh';
-                    curtain.style.backgroundColor = '#000';
-                    curtain.style.zIndex = '-1';
+                    curtain.style.position = 'absolute'; curtain.style.top = '100%'; curtain.style.left = '0';
+                    curtain.style.width = '100vw'; curtain.style.height = '120vh'; curtain.style.backgroundColor = '#000'; curtain.style.zIndex = '-1';
                     bottomBar.appendChild(curtain);
                     
                     gsap.set(bottomBar, { y: () => -window.innerHeight });
-                    
                     gsap.to(bottomBar, {
-                        y: 0,
-                        duration: 1.2,
-                        ease: 'power3.inOut',
-                        delay: 0.1,
-                        onComplete: () => {
-                            curtain.remove();
-                            interactionsEnabled = true;
-                            gsap.set(bottomBar, { clearProps: "transform" });
-                        }
+                        y: 0, duration: 1.2, ease: 'power3.inOut', delay: 0.1,
+                        onComplete: () => { curtain.remove(); interactionsEnabled = true; gsap.set(bottomBar, { clearProps: "transform" }); }
                     });
                 } else {
                     if (overlay) overlay.remove();
@@ -1159,7 +923,6 @@
                 proceedBtn.addEventListener('click', () => {
                     tryUnlockAudio();
                     sessionStorage.setItem('introPlayed', 'true'); 
-                    
                     if (isTransitioning) return;
                     isTransitioning = true;
                     
@@ -1175,38 +938,26 @@
                             onComplete: () => {
                                 if(bottomBar && uiLayer) {
                                     uiLayer.appendChild(bottomBar);
-                                    bottomBar.classList.remove('is-loading');
-                                    bottomBar.classList.add('is-fixed');
+                                    bottomBar.classList.remove('is-loading'); bottomBar.classList.add('is-fixed');
                                     
                                     const curtain = document.createElement('div');
-                                    curtain.className = 'transition-curtain';
-                                    curtain.style.position = 'absolute';
-                                    curtain.style.top = '100%';
-                                    curtain.style.left = '0';
-                                    curtain.style.width = '100vw';
-                                    curtain.style.height = '120vh';
-                                    curtain.style.backgroundColor = '#000';
-                                    curtain.style.zIndex = '-1';
+                                    curtain.className = 'transition-curtain'; curtain.style.position = 'absolute'; curtain.style.top = '100%';
+                                    curtain.style.left = '0'; curtain.style.width = '100vw'; curtain.style.height = '120vh'; curtain.style.backgroundColor = '#000'; curtain.style.zIndex = '-1';
                                     bottomBar.appendChild(curtain);
                                     
                                     gsap.set(bottomBar, { y: () => -window.innerHeight });
                                     if(overlay) overlay.remove(); 
                                     
                                     gsap.to(bottomBar, {
-                                        y: 0,
-                                        duration: 1.2,
-                                        ease: 'power3.inOut',
+                                        y: 0, duration: 1.2, ease: 'power3.inOut',
                                         onComplete: () => {
-                                            curtain.remove();
-                                            interactionsEnabled = true;
-                                            isTransitioning = false;
+                                            curtain.remove(); interactionsEnabled = true; isTransitioning = false; 
                                             gsap.set(bottomBar, { clearProps: "transform" });
                                         }
                                     });
                                 } else {
                                     if(overlay) overlay.remove(); 
-                                    interactionsEnabled = true; 
-                                    isTransitioning = false; 
+                                    interactionsEnabled = true; isTransitioning = false; 
                                 }
                             }
                         });
@@ -1214,48 +965,23 @@
 
                     if (!isAppLoaded) {
                         proceedBtn.textContent = "LOADING...";
-                        const checkInterval = setInterval(() => {
-                            if (isAppLoaded) {
-                                clearInterval(checkInterval);
-                                executeTransition();
-                            }
-                        }, 100);
-                        setTimeout(() => {
-                            clearInterval(checkInterval);
-                            if(document.getElementById('loading-overlay')) executeTransition();
-                        }, 2500); 
-                    } else {
-                        executeTransition();
-                    }
+                        const checkInterval = setInterval(() => { if (isAppLoaded) { clearInterval(checkInterval); executeTransition(); } }, 100);
+                        setTimeout(() => { clearInterval(checkInterval); if(document.getElementById('loading-overlay')) executeTransition(); }, 2500); 
+                    } else { executeTransition(); }
                 });
 
                 if (video) {
-                    video.addEventListener('ended', () => {
-                        if (!isPromptShowing) {
-                            isPromptShowing = true;
-                            triggerRevealAnimation();
-                        }
-                        video.play(); 
-                    });
-                    video.play().catch(() => {
-                        if (!isPromptShowing) {
-                            isPromptShowing = true;
-                            triggerRevealAnimation();
-                        }
-                    });
+                    video.addEventListener('ended', () => { if (!isPromptShowing) { isPromptShowing = true; triggerRevealAnimation(); } video.play(); });
+                    video.play().catch(() => { if (!isPromptShowing) { isPromptShowing = true; triggerRevealAnimation(); } });
                 }
             }
 
             function triggerRevealAnimation() {
                 const tl = gsap.timeline();
                 document.querySelectorAll('.delayed-reveal').forEach((el, index) => {
-                    tl.fromTo(el, 
-                        { y: '120%', autoAlpha: 0 }, 
-                        { y: '0%', autoAlpha: 1, duration: 0.8, ease: 'power3.out',
-                          onStart: () => {
-                              if (el.classList.contains('scramble-text')) scrambleText(el);
-                          }
-                        }, index * 0.15); 
+                    tl.fromTo(el, { y: '120%', autoAlpha: 0 }, { y: '0%', autoAlpha: 1, duration: 0.8, ease: 'power3.out',
+                          onStart: () => { if (el.classList.contains('scramble-text')) scrambleText(el); }
+                    }, index * 0.15); 
                 });
             }
 
@@ -1263,96 +989,83 @@
                 const original = element.getAttribute('data-text');
                 if (!original) return;
                 const chars = '!<>-_/[]{}—=+*^?#________';
-                let iteration = 0;
-                const maxIterations = 20; 
-                
+                let iteration = 0; const maxIterations = 20; 
                 const interval = setInterval(() => {
                     element.innerText = original.split("").map((letter, index) => {
                         if (index < iteration) return original[index];
                         if (original[index] === " ") return " "; 
                         return chars[Math.floor(Math.random() * chars.length)];
                     }).join("");
-                    
                     iteration += original.length / maxIterations;
-                    
-                    if (iteration >= original.length) {
-                        clearInterval(interval);
-                        element.innerText = original;
-                    }
+                    if (iteration >= original.length) { clearInterval(interval); element.innerText = original; }
                 }, 40);
             }
 
             function transitionToPage(url) {
                 if (!interactionsEnabled || isTransitioning) return;
                 isTransitioning = true;
-                
                 const bottomBar = document.getElementById('main-bottom-bar');
-                if (!bottomBar) {
-                    window.location.href = url;
-                    return;
-                }
-
+                if (!bottomBar) { window.location.href = url; return; }
                 const curtain = document.createElement('div');
-                curtain.className = 'transition-curtain';
-                curtain.style.position = 'absolute';
-                curtain.style.top = '100%';
-                curtain.style.left = '0';
-                curtain.style.width = '100vw';
-                curtain.style.height = '120vh'; 
-                curtain.style.backgroundColor = '#000';
-                curtain.style.zIndex = '-1';
+                curtain.className = 'transition-curtain'; curtain.style.position = 'absolute'; curtain.style.top = '100%';
+                curtain.style.left = '0'; curtain.style.width = '100vw'; curtain.style.height = '120vh'; curtain.style.backgroundColor = '#000'; curtain.style.zIndex = '-1';
                 bottomBar.appendChild(curtain);
-
-                gsap.to(bottomBar, {
-                    y: () => -window.innerHeight,
-                    duration: 1.2,
-                    ease: 'power3.inOut',
-                    onComplete: () => {
-                        window.location.href = url;
-                    }
-                });
+                gsap.to(bottomBar, { y: () => -window.innerHeight, duration: 1.2, ease: 'power3.inOut', onComplete: () => { window.location.href = url; } });
             }
 
-            const clickableMenuItems = document.querySelectorAll('.clickable-menu-item');
-            clickableMenuItems.forEach((item, index) => {
+            document.querySelectorAll('.clickable-menu-item').forEach((item) => {
                 item.addEventListener('mouseenter', () => {
-                    if (isDesktop) {
-                        const randomPitch = 0.8 + (Math.random() * 0.6); 
-                        playTingSound(randomPitch);
-                    }
+                    if (isDesktop) playTingSound(0.8 + (Math.random() * 0.6));
                 });
             });
 
-
+            // Using placeholder images for demonstration
             const galleryData = [
-                { src: 'img/1.jpg', name: 'Babolcsai Patrícia', title: 'Metahuman Academy', link: 'layout.html' },
-                { src: 'img/2.jpg', name: 'Dobó Ráhel', title: 'Synthetic Muse', link: 'layout.html' },
-                { src: 'img/3.jpg', name: 'Dubina Kitti', title: 'Techgno', link: 'layout.html' },
-                { src: 'img/4.jpg', name: 'Hanvai Kinga', title: 'Afterglow', link: 'layout.html' },
-                { src: 'img/5.jpg', name: 'Hoffman-né Varga Anita', title: 'AnthroTech', link: 'layout.html' },
-                { src: 'img/6.jpg', name: 'Kármán-Hajas Beatrix', title: 'Split & Merge', link: 'layout.html' },
-                { src: 'img/7.jpg', name: 'Kiss Adrienn', title: 'Somnicube', link: 'layout.html' },
-                { src: 'img/8.jpg', name: 'Kulcsár Hedvig Adrienn', title: 'Limit Value', link: 'layout.html' },
-                { src: 'img/9.jpg', name: 'Kulcsár Vivien', title: 'Synthetic Soul', link: 'layout.html' },
-                { src: 'img/10.jpg', name: 'Ördögh Vivien', title: 'Artificial Eden', link: 'layout.html' },
-                { src: 'img/11.jpg', name: 'Rétfalvi Dóra', title: 'SYNAPSE', link: 'layout.html' },
-                { src: 'img/12.jpg', name: 'Samu Edina', title: 'Think!', link: 'layout.html' },
-                { src: 'img/13.jpg', name: 'Szőke Lilla', title: 'Interface', link: 'layout.html' },
-                { src: 'img/14.jpg', name: 'Társi-Riczkó Mária', title: 'Personalab', link: 'layout.html' },
-                { src: 'img/15.jpg', name: 'Tulkovics Mercédesz Laura', title: 'T.SyncCore', link: 'layout.html' },
-                { src: 'img/16.jpg', name: 'Weszely Regina Mária', title: 'Liminal Code', link: 'layout.html' }
+                { src: 'https://placehold.co/800x533/111/fff?text=IMG+1', name: 'Babolcsai Patrícia', title: 'Metahuman Academy', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/222/fff?text=IMG+2', name: 'Dobó Ráhel', title: 'Synthetic Muse', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/333/fff?text=IMG+3', name: 'Dubina Kitti', title: 'Techgno', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/444/fff?text=IMG+4', name: 'Hanvai Kinga', title: 'Afterglow', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/111/fff?text=IMG+5', name: 'Hoffman-né Varga Anita', title: 'AnthroTech', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/222/fff?text=IMG+6', name: 'Kármán-Hajas Beatrix', title: 'Split & Merge', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/333/fff?text=IMG+7', name: 'Kiss Adrienn', title: 'Somnicube', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/444/fff?text=IMG+8', name: 'Kulcsár Hedvig Adrienn', title: 'Limit Value', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/111/fff?text=IMG+9', name: 'Kulcsár Vivien', title: 'Synthetic Soul', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/222/fff?text=IMG+10', name: 'Ördögh Vivien', title: 'Artificial Eden', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/333/fff?text=IMG+11', name: 'Rétfalvi Dóra', title: 'SYNAPSE', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/444/fff?text=IMG+12', name: 'Samu Edina', title: 'Think!', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/111/fff?text=IMG+13', name: 'Szőke Lilla', title: 'Interface', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/222/fff?text=IMG+14', name: 'Társi-Riczkó Mária', title: 'Personalab', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/333/fff?text=IMG+15', name: 'Tulkovics Mercédesz Laura', title: 'T.SyncCore', link: 'layout.html' },
+                { src: 'https://placehold.co/800x533/444/fff?text=IMG+16', name: 'Weszely Regina Mária', title: 'Liminal Code', link: 'layout.html' }
             ];
 
+            // --- CANVAS 2D LINES (Massive Optimization over DOM nodes) ---
+            const linesCanvas = document.getElementById('vertical-lines-canvas');
+            const linesCtx = linesCanvas.getContext('2d', { alpha: true });
+            
+            function resizeLinesCanvas() {
+                const rect = linesCanvas.parentElement.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                linesCanvas.width = rect.width * dpr;
+                linesCanvas.height = rect.height * dpr;
+                linesCtx.scale(dpr, dpr);
+                linesCanvas.style.width = `${rect.width}px`;
+                linesCanvas.style.height = `${rect.height}px`;
+            }
+
+            // WebGL Background Canvas setup
             const bgCanvas = document.getElementById('bg-canvas');
             const bgScene = new THREE.Scene();
             const bgCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
             const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, alpha: false, antialias: false });
-            bgRenderer.setSize(innerWidth, innerHeight);
             
-            // OPTIMIZATION 1: Drastically reduce pixel density to 1x for the heavy background shader
-            bgRenderer.setPixelRatio(1);
+            // OPTIMIZATION: Limit Pixel Ratio to save massive GPU fill-rate. 1.25 is sharp enough for a dithered effect.
+            const optimalPixelRatio = Math.min(window.devicePixelRatio, 1.25);
+            bgRenderer.setSize(innerWidth, innerHeight);
+            bgRenderer.setPixelRatio(optimalPixelRatio);
 
             const bgFragmentShader = `
+                precision mediump float; // OPTIMIZATION: Critical for mobile performance
                 uniform vec2 uResolution;
                 uniform float uTime;
                 uniform float uScroll;
@@ -1364,13 +1077,14 @@
                 }
                 float bayer4x4(vec2 a) { return bayer2x2(a) + bayer2x2(floor(a / 2.0)) / 4.0; }
                 float bayer8x8(vec2 a) { return bayer4x4(a) + bayer2x2(floor(a / 4.0)) / 16.0; }
+                float bayer16x16(vec2 a) { return bayer8x8(a) + bayer2x2(floor(a / 8.0)) / 64.0; }
 
                 vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
                 float snoise(vec2 v){
                   const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
                   vec2 i  = floor(v + dot(v, C.yy) );
                   vec2 x0 = v -   i + dot(i, C.xx);
-                  vec2 i1; i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
                   vec4 x12 = x0.xyxy + C.xxzz; x12.xy -= i1;
                   i = mod(i, 289.0);
                   vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
@@ -1386,16 +1100,17 @@
                   return 130.0 * dot(m, g);
                 }
 
-                // OPTIMIZATION 2: Reduced FBM loop octaves from 5 to 3 for massive GPU savings
                 float fbm(vec2 p, float time) {
                     float val = 0.0;
                     float amp = 1.0;
                     float freq = 1.0;
                     vec2 movement = vec2(time * 0.05, time * 0.03);
+                    
+                    // OPTIMIZATION: Reduced iterations from 5 to 3 for massive GPU savings with similar visual result
                     for (int i = 0; i < 3; i++) {
                         val += amp * snoise((p + movement) * freq);
                         p = p * 1.56 + vec2(17.2, 43.7);
-                        amp *= 0.15; 
+                        amp *= 0.15; // Adjusted to compensate for fewer iterations
                         freq *= 1.78; 
                     }
                     return val;
@@ -1410,9 +1125,7 @@
                     
                     float ditherSize = 3.0;
                     vec2 gridPos = floor(gl_FragCoord.xy / ditherSize);
-                    
-                    // OPTIMIZATION 3: Using bayer8x8 instead of bayer16x16 drops deep recursion penalty
-                    float bayerVal = bayer8x8(gridPos);
+                    float bayerVal = bayer16x16(gridPos);
                     float centeredDither = bayerVal - 0.5;
                     
                     float levels = 3.0;
@@ -1433,8 +1146,7 @@
                     uResolution: { value: new THREE.Vector2(innerWidth, innerHeight) },
                     uTime: { value: 0 },
                     uScroll: { value: 0 }
-                },
-                precision: 'mediump' // OPTIMIZATION: Medium precision for WebGL
+                }
             });
             bgScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bgMaterial));
 
@@ -1442,11 +1154,9 @@
             const scene = new THREE.Scene();
             const camera = new THREE.OrthographicCamera(innerWidth / -2, innerWidth / 2, innerHeight / 2, innerHeight / -2, 0.1, 20000);
             camera.position.z = 10000;
-            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+            const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false }); // Antialias false is faster, dither hides jaggies
             renderer.setSize(innerWidth, innerHeight);
-            
-            // OPTIMIZATION 4: Cap pixel ratio to 1.5 maximum for foreground (Retina max logic)
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+            renderer.setPixelRatio(optimalPixelRatio); 
             renderer.outputEncoding = THREE.sRGBEncoding; 
 
             const vertexShader = `
@@ -1458,6 +1168,7 @@
             `;
             
             const fragmentShader = `
+                precision mediump float; // OPTIMIZATION: Critical for mobile GPU
                 uniform sampler2D uTexture;
                 uniform vec2 uMouse;
                 uniform float uHover;
@@ -1466,12 +1177,10 @@
                 uniform vec2 uImageSize;
                 varying vec2 vUv;
 
-                float bayer2x2(vec2 a) {
-                    vec2 p = floor(mod(a, 2.0));
-                    return (p.x * 2.0 + p.y * 3.0 - p.x * p.y * 4.0) / 4.0;
-                }
+                float bayer2x2(vec2 a) { vec2 p = floor(mod(a, 2.0)); return (p.x * 2.0 + p.y * 3.0 - p.x * p.y * 4.0) / 4.0; }
                 float bayer4x4(vec2 a) { return bayer2x2(a) + bayer2x2(floor(a / 2.0)) / 4.0; }
                 float bayer8x8(vec2 a) { return bayer4x4(a) + bayer2x2(floor(a / 4.0)) / 16.0; }
+                float bayer16x16(vec2 a) { return bayer8x8(a) + bayer2x2(floor(a / 8.0)) / 64.0; }
 
                 void main() {
                     vec2 ratio = vec2(
@@ -1483,9 +1192,7 @@
                     vec3 pristineColor = texture2D(uTexture, finalUv).rgb;
                     
                     float ditherDotScale = 2.0; 
-                    
-                    // OPTIMIZATION 3: Downgraded 16x16 to 8x8 matrix 
-                    float ditherValue = bayer8x8(vUv * (uMeshSize / ditherDotScale));
+                    float ditherValue = bayer16x16(vUv * (uMeshSize / ditherDotScale));
                     float centeredDither = ditherValue - 0.5; 
                     
                     float luminance = dot(pristineColor, vec3(0.2126, 0.7152, 0.0722));
@@ -1496,7 +1203,6 @@
                     float colorSteps = levels - 4.0; 
                     float ditheredLuma = luminance + (centeredDither / colorSteps);
                     ditheredLuma = clamp(floor(ditheredLuma * colorSteps + 0.5) / colorSteps, 0.0, 1.0);
-                    
                     vec3 ditheredColor = vec3(ditheredLuma); 
                     
                     vec2 meshRatio = vec2(uMeshSize.x / min(uMeshSize.x, uMeshSize.y), uMeshSize.y / min(uMeshSize.x, uMeshSize.y));
@@ -1513,31 +1219,13 @@
                 }
             `;
 
-            const planeGeometry = new THREE.PlaneGeometry(1, 1, 32, 32);
+            const planeGeometry = new THREE.PlaneGeometry(1, 1, 16, 16); // Reduced subdivisions for performance
             const textureLoader = new THREE.TextureLoader(manager);
             
             const meshes = [];
             const DOMItems = [];
             const itemStates = []; 
             const gallery = document.getElementById('gallery');
-            const vLines = []; 
-            
-            const overlayLines = document.getElementById('vertical-lines');
-            if (overlayLines) {
-                for(let i = 1; i < 50; i++) {
-                    const line = document.createElement('div');
-                    line.className = 'v-line';
-                    line.style.left = `${100 * (1 - Math.pow(0.88, i))}%`;
-                    overlayLines.appendChild(line);
-                    vLines.push(line);
-                }
-            }
-
-            // OPTIMIZATION 5: Precalculate vertical lines constants to pull Math ops out of the render loop
-            const vLineConstants = vLines.map((_, i) => ({
-                speed: 0.4 * Math.pow(0.92, i),
-                amplitude: 12 * Math.pow(0.9, i)
-            }));
 
             const tooltip = document.getElementById('cursor-tooltip');
             const tooltipMask = document.getElementById('tt-mask');
@@ -1548,28 +1236,20 @@
 
             let mouseX = -1000;
             let mouseY = -1000;
-            
             let xTo = gsap.quickTo(tooltip, "x", {duration: 0.15, ease: "power2.out"});
             let yTo = gsap.quickTo(tooltip, "y", {duration: 0.15, ease: "power2.out"});
 
             window.addEventListener("mousemove", (e) => {
                 if (!isDesktop) return; 
-                mouseX = e.clientX;
-                mouseY = e.clientY;
-                
-                let targetX = mouseX + 15;
-                let targetY = mouseY + 15;
-                const tWidth = tooltip.offsetWidth;
-                const tHeight = tooltip.offsetHeight;
-                
+                mouseX = e.clientX; mouseY = e.clientY;
+                let targetX = mouseX + 15; let targetY = mouseY + 15;
+                const tWidth = tooltip.offsetWidth; const tHeight = tooltip.offsetHeight;
                 if (targetX + tWidth > window.innerWidth - 10) targetX = mouseX - tWidth - 15;
                 if (targetY + tHeight > window.innerHeight - 10) targetY = mouseY - tHeight - 15;
-                
-                xTo(targetX);
-                yTo(targetY);
+                xTo(targetX); yTo(targetY);
             });
 
-            tooltipArrowBox.addEventListener('click', (e) => {
+            tooltipArrowBox.addEventListener('click', () => {
                 if (currentHoveredIndex !== -1 && interactionsEnabled && !isTransitioning) {
                     transitionToPage(galleryData[currentHoveredIndex].link);
                 }
@@ -1581,21 +1261,17 @@
                 a.href = data.link;
                 a.addEventListener('click', (e) => {
                     e.preventDefault();
-                    if (interactionsEnabled && isDesktop) {
-                        transitionToPage(data.link);
-                    }
+                    if (interactionsEnabled && isDesktop) transitionToPage(data.link);
                 }); 
                 gallery.appendChild(a);
                 DOMItems.push(a);
-                
                 itemStates.push({ webglAlpha: 0 });
 
                 const texture = textureLoader.load(data.src);
                 texture.encoding = THREE.sRGBEncoding;
 
                 const material = new THREE.ShaderMaterial({
-                    vertexShader,
-                    fragmentShader,
+                    vertexShader, fragmentShader,
                     uniforms: {
                         uTexture: { value: texture },
                         uMouse: { value: new THREE.Vector2(0.5, 0.5) },
@@ -1604,8 +1280,7 @@
                         uMeshSize: { value: new THREE.Vector2(100, 100) },
                         uImageSize: { value: new THREE.Vector2(800, 533) } 
                     },
-                    transparent: true,
-                    precision: 'mediump' // OPTIMIZATION: Medium precision
+                    transparent: true
                 });
 
                 const mesh = new THREE.Mesh(planeGeometry, material);
@@ -1624,7 +1299,6 @@
                 if (!interactionsEnabled || isTransitioning) return;
                 if (e.target.closest('.ui-layer, .proceed-btn, #loading-overlay, .tt-arrow-box')) return;
                 if (!isDesktop) return;
-
                 if (currentHoveredIndex !== -1) {
                     e.preventDefault();
                     transitionToPage(galleryData[currentHoveredIndex].link);
@@ -1647,17 +1321,13 @@
                 gsap.set([tooltipTitle, tooltipCategory], { x: -30, opacity: 0 });
                 gsap.set(tooltipArrow, { x: -20, opacity: 0 });
                 gsap.set(tooltip, { autoAlpha: 1 });
-                gsap.fromTo(tooltipMask, 
-                    { clipPath: 'inset(0% 100% 0% 0%)' },
-                    { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.5, ease: 'power3.out' }
-                );
+                gsap.fromTo(tooltipMask, { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.5, ease: 'power3.out' });
                 gsap.to([tooltipTitle, tooltipCategory], { x: 0, opacity: 1, duration: 0.5, stagger: 0.1, delay: 0.1, ease: 'power3.out' });
                 gsap.to(tooltipArrow, { x: 0, opacity: 1, duration: 0.5, delay: 0.25, ease: 'power3.out' });
             }
 
             function triggerLeave(index) {
                 const mesh = meshes[index];
-                
                 gsap.to(itemStates[index], { webglAlpha: 0, duration: 1.2, ease: 'power2.out', overwrite: 'auto' });
                 gsap.to(mesh.material.uniforms.uHover, { value: 0, duration: 1.2, ease: 'power2.out', overwrite: 'auto' });
 
@@ -1665,28 +1335,25 @@
                 gsap.killTweensOf([tooltipMask, tooltipTitle, tooltipCategory, tooltipArrow]);
 
                 gsap.to(tooltipMask, { 
-                    clipPath: 'inset(0% 100% 0% 0%)', 
-                    duration: 0.4, 
-                    ease: 'power3.inOut',
+                    clipPath: 'inset(0% 100% 0% 0%)', duration: 0.4, ease: 'power3.inOut',
                     onComplete: () => gsap.set(tooltip, { autoAlpha: 0 })
                 });
                 gsap.to([tooltipTitle, tooltipCategory, tooltipArrow], { x: 20, opacity: 0, duration: 0.3, stagger: 0.05, ease: 'power2.in' });
             }
 
-            // OPTIMIZATION 6: Pass width and height arguments so we don't query the DOM 16 times per frame
-            function getInterpolatedState(t, winW, winH) {
+            function getInterpolatedState(t) {
                 let x, y, wPx, hPx, o;
                 if (isDesktop) {
                     const wave = Math.sin((t - 0.05) * Math.PI * 2);
                     const stretch = Math.abs(wave);
                     x = -0.1 + (t * 1.0); 
-                    const baseW = winW * 0.18;
-                    const baseH = winH * 0.32;
+                    const baseW = window.innerWidth * 0.18;
+                    const baseH = window.innerHeight * 0.32;
                     wPx = baseW * (1 + stretch * 0.85);
                     hPx = baseH * (1 - stretch * 0.15);
-                    const bottomBarPx = Math.max(100, Math.min(winH * 0.14, 160));
-                    const bottomBarTopRatio = (winH - bottomBarPx) / winH;
-                    const maxImageHalfHeightRatio = (baseH * 0.85 / 2) / winH;
+                    const bottomBarPx = Math.max(100, Math.min(window.innerHeight * 0.14, 160));
+                    const bottomBarTopRatio = (window.innerHeight - bottomBarPx) / window.innerHeight;
+                    const maxImageHalfHeightRatio = (baseH * 0.85 / 2) / window.innerHeight;
                     const maxY = bottomBarTopRatio - maxImageHalfHeightRatio;
                     const minY = maxImageHalfHeightRatio + 0.01; 
                     const centerY = (maxY + minY) / 2;
@@ -1700,8 +1367,8 @@
                     const wave = Math.sin((t - 0.02) * Math.PI * 4);
                     const stretch = Math.abs(wave);
                     x = 0.5 + (wave * 0.25);
-                    const baseW = winW * 0.55;
-                    const baseH = winH * 0.22;
+                    const baseW = window.innerWidth * 0.55;
+                    const baseH = window.innerHeight * 0.22;
                     wPx = baseW * (1 - stretch * 0.15);
                     hPx = baseH * (1 + stretch * 0.40);
                     if (t < 0.05) o = t / 0.05; 
@@ -1712,7 +1379,6 @@
                 return { x, y, wPx, hPx, z, o };
             }
 
-
             let targetScroll = 10000; 
             let currentScroll = targetScroll;
             let userScrollDistance = 0; 
@@ -1721,107 +1387,92 @@
             function checkUserTick() {
                 const currentThreshold = Math.floor(userScrollDistance / 60);
                 if (currentThreshold !== lastUserTickThreshold) {
-                    playTickSound();
-                    lastUserTickThreshold = currentThreshold;
+                    playTickSound(); lastUserTickThreshold = currentThreshold;
                 }
             }
             
             window.addEventListener('wheel', (e) => { 
-                const delta = e.deltaY * 0.35;
-                targetScroll += delta; 
-                userScrollDistance += Math.abs(delta); 
-                checkUserTick();
+                const delta = e.deltaY * 0.35; targetScroll += delta; userScrollDistance += Math.abs(delta); checkUserTick();
             });
             
             let touchStartY = 0;
             window.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
-            
             window.addEventListener('touchmove', (e) => {
-                const touchY = e.touches[0].clientY; 
-                const delta = (touchStartY - touchY) * 1.0;
-                targetScroll += delta; 
-                userScrollDistance += Math.abs(delta);
-                checkUserTick();
-                touchStartY = touchY;
+                const touchY = e.touches[0].clientY; const delta = (touchStartY - touchY) * 1.0;
+                targetScroll += delta; userScrollDistance += Math.abs(delta); checkUserTick(); touchStartY = touchY;
             }, { passive: true });
 
             const clock = new THREE.Clock();
 
+            // Setup sizes early for Canvas 2D
+            resizeLinesCanvas();
+
             function render() {
                 const time = clock.getElapsedTime();
-                
                 targetScroll += 0.8; 
                 let scrollVelocity = (targetScroll - currentScroll) * 0.06;
                 currentScroll += scrollVelocity;
                 
+                // 1. BG RENDER
                 bgMaterial.uniforms.uTime.value = time;
+                bgMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
                 bgMaterial.uniforms.uScroll.value = currentScroll;
-                // OPTIMIZATION 7: Removed uResolution setting inside render loop. It's safe to update only on resize.
                 bgRenderer.render(bgScene, bgCamera);
 
-                // --- CURSOR DITHER RENDER PASS ---
+                // 2. CURSOR RENDER
                 if (isDesktop) {
                     cursorDitherMaterial.uniforms.uTime.value = time;
                     cursorDitherMaterial.uniforms.uScrollVelocity.value = Math.abs(scrollVelocity); 
                     cursorRenderer.render(cursorScene, cursorCamera);
-                    
                     const cursorSpinWrapper = document.getElementById('cursor-spin-wrapper');
-                    if (cursorSpinWrapper) {
-                        cursorSpinWrapper.style.transform = `rotate(${currentScroll * 0.3}deg)`;
-                    }
+                    if (cursorSpinWrapper) cursorSpinWrapper.style.transform = `rotate(${currentScroll * 0.3}deg)`;
                 }
 
-                vLines.forEach((line, i) => {
-                    const c = vLineConstants[i];
-                    const phase = (time * c.speed) + (currentScroll * 0.01);
-                    // OPTIMIZATION 8: Used translate3d to force GPU composition instead of normal translate
-                    line.style.transform = `translate3d(${Math.sin(phase) * c.amplitude}px, 0, 0)`;
-                });
+                // 3. LINES CANVAS 2D UPDATE (Optimization replacing 50 DOM elements)
+                linesCtx.clearRect(0, 0, linesCanvas.width, linesCanvas.height);
+                linesCtx.fillStyle = '#fff';
+                const cw = linesCanvas.clientWidth;
+                const ch = linesCanvas.clientHeight;
+                for(let i = 1; i < 50; i++) {
+                    const speed = 0.4 * Math.pow(0.92, i);
+                    const phase = (time * speed) + (currentScroll * 0.01);
+                    const amplitude = 12 * Math.pow(0.9, i);
+                    const xOffset = Math.sin(phase) * amplitude;
+                    const baseLeft = cw * (1 - Math.pow(0.88, i));
+                    linesCtx.fillRect(baseLeft + xOffset, 0, 1.5, ch);
+                }
 
+                // 4. GALLERY CALCULATION
                 const globalOffset = currentScroll / 4000;
                 let topHoverIndex = -1;
                 let maxZ = -Infinity;
                 let minDist = Infinity; 
-                
                 const calculatedStates = [];
-                
-                // Cache window dimensions so we don't query DOM heavily every loop iteration
-                const winW = window.innerWidth;
-                const winH = window.innerHeight;
                 
                 DOMItems.forEach((item, index) => {
                     let t = (globalOffset + (index / galleryData.length) * 2.0) % 2.0;
                     if (t < 0) t = (t % 2.0) + 2.0; 
 
-                    const state = getInterpolatedState(t, winW, winH);
-                    const xPx = state.x * winW;
-                    const yPx = state.y * winH;
+                    const state = getInterpolatedState(t);
+                    const xPx = state.x * window.innerWidth;
+                    const yPx = state.y * window.innerHeight;
                     const finalW = state.wPx;
                     const finalH = state.hPx;
                     
                     calculatedStates.push({ xPx, yPx, finalW, finalH, baseZ: state.z, o: state.o });
 
-                    const left = xPx - finalW / 2;
-                    const right = xPx + finalW / 2;
-                    const top = yPx - finalH / 2;
-                    const bottom = yPx + finalH / 2;
-
                     if (interactionsEnabled && state.o > 0.1) {
+                        const left = xPx - finalW / 2; const right = xPx + finalW / 2;
+                        const top = yPx - finalH / 2; const bottom = yPx + finalH / 2;
                         if (isDesktop) {
                             if (mouseX >= left && mouseX <= right && mouseY >= top && mouseY <= bottom) {
-                                if (state.z > maxZ) {
-                                    maxZ = state.z;
-                                    topHoverIndex = index;
-                                }
+                                if (state.z > maxZ) { maxZ = state.z; topHoverIndex = index; }
                             }
                         } else {
-                            const screenCenterX = winW / 2;
-                            const screenCenterY = (winH - 90) / 2; 
+                            const screenCenterX = window.innerWidth / 2;
+                            const screenCenterY = (window.innerHeight - 90) / 2; 
                             const dist = Math.hypot(xPx - screenCenterX, yPx - screenCenterY);
-                            if (dist < minDist && dist < 180) {
-                                minDist = dist;
-                                topHoverIndex = index;
-                            }
+                            if (dist < minDist && dist < 180) { minDist = dist; topHoverIndex = index; }
                         }
                     }
                 });
@@ -1838,36 +1489,46 @@
                     const iState = itemStates[index];
                     const isHovered = (index === currentHoveredIndex);
                     
+                    // OPTIMIZATION: Visibility culling. Do not process/render transparent items!
+                    const isVisible = cState.o > 0.005;
+                    mesh.visible = isVisible;
+                    
+                    if (!isVisible) {
+                        item.style.visibility = 'hidden';
+                        return; // Stop applying styles and math on invisible items
+                    }
+                    item.style.visibility = 'visible';
+
                     const finalZ = cState.baseZ + (isHovered ? 5000 : 0);
 
-                    // OPTIMIZATION 9: Removed sub-pixel translations via Math.round & chained translate3d hardware triggers
-                    item.style.transform = `translate3d(${Math.round(cState.xPx)}px, ${Math.round(cState.yPx)}px, 0) translate3d(-50%, -50%, 0)`;
-                    item.style.width = `${Math.round(cState.finalW)}px`;
-                    item.style.height = `${Math.round(cState.finalH)}px`;
+                    // OPTIMIZATION: Use transform: scale() instead of style.width/height to avoid Layout recalculations
+                    const tx = Math.round(cState.xPx);
+                    const ty = Math.round(cState.yPx);
+                    const scaleX = cState.finalW / 800; // Base width is 800
+                    const scaleY = cState.finalH / 533; // Base height is 533
+                    
+                    item.style.transform = `translate(${tx}px, ${ty}px) translate(-50%, -50%) scale(${scaleX}, ${scaleY})`;
                     item.style.zIndex = Math.round(finalZ);
-                    item.style.opacity = cState.o;
+                    item.style.opacity = cState.o.toFixed(3);
 
-                    mesh.position.set(cState.xPx - winW / 2, -(cState.yPx - winH / 2), finalZ);
-                    mesh.scale.set(cState.finalW, cState.finalH, 1);
+                    // 5. WEBGL MESH SYNC
+                    mesh.position.set(tx - innerWidth / 2, -(ty - innerHeight / 2), finalZ);
+                    // Match scale logic exactly with geometry 1x1
+                    mesh.scale.set(Math.round(cState.finalW), Math.round(cState.finalH), 1);
                     mesh.material.uniforms.uOpacity.value = cState.o * iState.webglAlpha;
                     mesh.material.uniforms.uMeshSize.value.set(cState.finalW, cState.finalH);
 
                     if (isHovered) {
-                        const left = cState.xPx - cState.finalW / 2;
-                        const top = cState.yPx - cState.finalH / 2;
-                        const effectX = isDesktop ? mouseX : cState.xPx;
-                        const effectY = isDesktop ? mouseY : cState.yPx;
-                        const uvX = (effectX - left) / cState.finalW;
-                        const uvY = 1.0 - ((effectY - top) / cState.finalH);
+                        const left = cState.xPx - cState.finalW / 2; const top = cState.yPx - cState.finalH / 2;
+                        const effectX = isDesktop ? mouseX : cState.xPx; const effectY = isDesktop ? mouseY : cState.yPx;
+                        const uvX = (effectX - left) / cState.finalW; const uvY = 1.0 - ((effectY - top) / cState.finalH);
                         gsap.to(mesh.material.uniforms.uMouse.value, { x: uvX, y: uvY, duration: 0.1, overwrite: 'auto' });
                     }
                 });
 
                 if (!isDesktop && currentHoveredIndex !== -1) {
-                    const tWidth = tooltip.offsetWidth || 300;
-                    const tHeight = tooltip.offsetHeight || 60;
-                    xTo(winW / 2 - tWidth / 2);
-                    yTo(winH - 90 - tHeight - 20); 
+                    const tWidth = tooltip.offsetWidth || 300; const tHeight = tooltip.offsetHeight || 60;
+                    xTo(window.innerWidth / 2 - tWidth / 2); yTo(window.innerHeight - 90 - tHeight - 20); 
                 }
 
                 renderer.render(scene, camera);
@@ -1877,6 +1538,8 @@
             render();
 
             window.addEventListener('resize', () => {
+                resizeLinesCanvas();
+
                 bgCamera.updateProjectionMatrix();
                 bgRenderer.setSize(window.innerWidth, window.innerHeight);
                 bgMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
@@ -1890,8 +1553,7 @@
 
                 const currentIsDesktop = window.innerWidth >= 768;
                 if(isDesktop !== currentIsDesktop) {
-                    isDesktop = currentIsDesktop;
-                    location.reload(); 
+                    isDesktop = currentIsDesktop; location.reload(); 
                 }
             });
 
