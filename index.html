@@ -6,7 +6,6 @@
     <title>GRAFIKA ESTI 2025-26</title>
     <link rel="icon" type="image/png" href="favicon.png">
 
-    
     <!-- GSAP for smooth animations -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <!-- Three.js for WebGL Effects -->
@@ -784,7 +783,12 @@
                     </div>
                 </a>
             </div>
-            
+            <div class="bottom-lines">
+                <div class="lines-row"></div>
+                <div class="lines-row"></div>
+                <div class="lines-row"></div>
+                <div class="vertical-lines-overlay" id="vertical-lines"></div>
+            </div>
         </div>
         <div class="loading-black-bg">
             <div class="loading-prompt-content" id="loading-prompt-content">
@@ -815,7 +819,7 @@
         </div>
     </div>
 
-    
+    <canvas id="bg-canvas"></canvas>
     <canvas id="webgl-canvas"></canvas>
     <div id="gallery"></div>
 
@@ -865,7 +869,6 @@
             let isDesktop = window.innerWidth >= 768;
 
             // --- AUDIO UNLOCK & CONTINUOUS MUSIC LOGIC ---
-            // Retrieve mute preference, default is sound enabled
             let isSoundEnabled = sessionStorage.getItem('isSoundEnabled') !== 'false';
             let isAudioUnlocked = false; 
 
@@ -873,13 +876,11 @@
             bgMusic.loop = true; 
             bgMusic.volume = 0.4; 
 
-            // Restore playback exact timestamp from previous page
             const savedTime = sessionStorage.getItem('bgMusicTime');
             if (savedTime !== null) {
                 bgMusic.currentTime = parseFloat(savedTime);
             }
 
-            // Save the playback timestamp right before leaving the page
             window.addEventListener('beforeunload', () => {
                 sessionStorage.setItem('bgMusicTime', bgMusic.currentTime);
                 sessionStorage.setItem('isSoundEnabled', isSoundEnabled);
@@ -911,11 +912,9 @@
                 tingAudioPool.push(a);
             }
 
-            // Centralized unlock logic
             const tryUnlockAudio = () => {
                 if (isAudioUnlocked) return;
                 
-                // Initialize sfx
                 audioPool.forEach(a => {
                     const p = a.play();
                     if (p !== undefined) {
@@ -934,12 +933,10 @@
                     if (bgPromise !== undefined) {
                         bgPromise.then(() => {
                             isAudioUnlocked = true;
-                            // Remove stealth listeners on success
                             ['pointerdown', 'touchstart', 'keydown', 'wheel', 'mousemove'].forEach(e => {
                                 window.removeEventListener(e, tryUnlockAudio);
                             });
                         }).catch(() => {
-                            // Still blocked by browser, leave listeners active to try again
                             isAudioUnlocked = false; 
                         });
                     }
@@ -948,13 +945,10 @@
                 }
             };
 
-            // Attempt Autoplay Seamlessly if coming from another page
             if (isSoundEnabled) {
                 bgMusic.play().then(() => {
                     isAudioUnlocked = true;
                 }).catch(() => {
-                    // Browser Autoplay blocked us. Attach stealth listeners to unlock instantly 
-                    // the moment the user moves the mouse, scrolls, or touches the screen.
                     ['pointerdown', 'touchstart', 'keydown', 'wheel', 'mousemove'].forEach(e => {
                         window.addEventListener(e, tryUnlockAudio, { passive: true });
                     });
@@ -1003,7 +997,6 @@
                 }
             });
 
-
             // --- CUSTOM CURSOR LOGIC ---
             const customCursor = document.getElementById('custom-cursor');
             const cursorIcon = document.getElementById('cursor-icon');
@@ -1012,7 +1005,7 @@
             let hoverTimeline = null;
             
             window.addEventListener('mousemove', (e) => {
-                if(isDesktop) customCursor.style.transform = `translate(${e.clientX - 70}px, ${e.clientY - 70}px)`;
+                if(isDesktop) customCursor.style.transform = `translate3d(${e.clientX - 70}px, ${e.clientY - 70}px, 0)`;
             });
 
             document.addEventListener('mouseover', (e) => {
@@ -1053,6 +1046,7 @@
             const cursorCanvas = document.getElementById('cursor-dither-canvas');
             const cursorRenderer = new THREE.WebGLRenderer({ canvas: cursorCanvas, alpha: true, antialias: false });
             cursorRenderer.setSize(140, 140);
+            cursorRenderer.setPixelRatio(1); // Explicitly lock pixel ratio for cursor
             const cursorScene = new THREE.Scene();
             const cursorCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
             
@@ -1100,7 +1094,8 @@
                     uHoverState: { value: 0 },
                     uScrollVelocity: { value: 0 } 
                 },
-                transparent: true
+                transparent: true,
+                precision: 'lowp' // Optimization: low precision perfectly fine for cursor
             });
             cursorScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), cursorDitherMaterial));
 
@@ -1117,11 +1112,9 @@
             const proceedBtn = document.getElementById('proceed-btn');
             let isPromptShowing = false;
             
-            // CHECK IF USER HAS ALREADY PLAYED INTRO
             const hasPlayedIntro = sessionStorage.getItem('introPlayed');
 
             if (hasPlayedIntro) {
-                // Grab elements BEFORE removing the overlay
                 const bottomBar = document.getElementById('main-bottom-bar');
                 const uiLayer = document.querySelector('.ui-layer');
                 const overlay = document.getElementById('loading-overlay');
@@ -1131,7 +1124,7 @@
                     bottomBar.classList.remove('is-loading');
                     bottomBar.classList.add('is-fixed');
                     
-                    if (overlay) overlay.remove(); // Safely remove overlay now
+                    if (overlay) overlay.remove(); 
                     
                     const curtain = document.createElement('div');
                     curtain.className = 'transition-curtain';
@@ -1144,7 +1137,6 @@
                     curtain.style.zIndex = '-1';
                     bottomBar.appendChild(curtain);
                     
-                    // Push the bar entirely out of the frame above the screen
                     gsap.set(bottomBar, { y: () => -window.innerHeight });
                     
                     gsap.to(bottomBar, {
@@ -1177,18 +1169,15 @@
                         const uiLayer = document.querySelector('.ui-layer');
                         const promptContent = document.getElementById('loading-prompt-content');
 
-                        // 1. Fade out the text and video so we are left with a pure black screen
                         gsap.to(promptContent, {
                             opacity: 0,
                             duration: 0.4,
                             onComplete: () => {
                                 if(bottomBar && uiLayer) {
-                                    // 2. Rescue the bottom bar
                                     uiLayer.appendChild(bottomBar);
                                     bottomBar.classList.remove('is-loading');
                                     bottomBar.classList.add('is-fixed');
                                     
-                                    // 3. Attach the black wiping curtain
                                     const curtain = document.createElement('div');
                                     curtain.className = 'transition-curtain';
                                     curtain.style.position = 'absolute';
@@ -1200,14 +1189,9 @@
                                     curtain.style.zIndex = '-1';
                                     bottomBar.appendChild(curtain);
                                     
-                                    // 4. Move the bar out of the frame above the screen
-                                    // Because it has the curtain attached, the screen stays perfectly black!
                                     gsap.set(bottomBar, { y: () => -window.innerHeight });
-                                    
-                                    // 5. Destroy the original overlay
                                     if(overlay) overlay.remove(); 
                                     
-                                    // 6. Execute the unified Wipe-Down transition
                                     gsap.to(bottomBar, {
                                         y: 0,
                                         duration: 1.2,
@@ -1215,14 +1199,14 @@
                                         onComplete: () => {
                                             curtain.remove();
                                             interactionsEnabled = true;
-                                            isTransitioning = false; // FIX: Release the transition lock!
+                                            isTransitioning = false;
                                             gsap.set(bottomBar, { clearProps: "transform" });
                                         }
                                     });
                                 } else {
                                     if(overlay) overlay.remove(); 
                                     interactionsEnabled = true; 
-                                    isTransitioning = false; // FIX: Release the transition lock!
+                                    isTransitioning = false; 
                                 }
                             }
                         });
@@ -1298,7 +1282,6 @@
                 }, 40);
             }
 
-            // --- PAGE TRANSITION FUNCTIONALITY ---
             function transitionToPage(url) {
                 if (!interactionsEnabled || isTransitioning) return;
                 isTransitioning = true;
@@ -1320,7 +1303,6 @@
                 curtain.style.zIndex = '-1';
                 bottomBar.appendChild(curtain);
 
-                // Pull the bar entirely out of the frame above the screen
                 gsap.to(bottomBar, {
                     y: () => -window.innerHeight,
                     duration: 1.2,
@@ -1331,7 +1313,6 @@
                 });
             }
 
-            // --- TING SOUND HOVER LISTENERS ---
             const clickableMenuItems = document.querySelectorAll('.clickable-menu-item');
             clickableMenuItems.forEach((item, index) => {
                 item.addEventListener('mouseenter', () => {
@@ -1367,7 +1348,9 @@
             const bgCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
             const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, alpha: false, antialias: false });
             bgRenderer.setSize(innerWidth, innerHeight);
-            bgRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            
+            // OPTIMIZATION 1: Drastically reduce pixel density to 1x for the heavy background shader
+            bgRenderer.setPixelRatio(1);
 
             const bgFragmentShader = `
                 uniform vec2 uResolution;
@@ -1381,7 +1364,6 @@
                 }
                 float bayer4x4(vec2 a) { return bayer2x2(a) + bayer2x2(floor(a / 2.0)) / 4.0; }
                 float bayer8x8(vec2 a) { return bayer4x4(a) + bayer2x2(floor(a / 4.0)) / 16.0; }
-                float bayer16x16(vec2 a) { return bayer8x8(a) + bayer2x2(floor(a / 8.0)) / 64.0; }
 
                 vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
                 float snoise(vec2 v){
@@ -1404,15 +1386,16 @@
                   return 130.0 * dot(m, g);
                 }
 
+                // OPTIMIZATION 2: Reduced FBM loop octaves from 5 to 3 for massive GPU savings
                 float fbm(vec2 p, float time) {
                     float val = 0.0;
                     float amp = 1.0;
                     float freq = 1.0;
                     vec2 movement = vec2(time * 0.05, time * 0.03);
-                    for (int i = 0; i < 5; i++) {
+                    for (int i = 0; i < 3; i++) {
                         val += amp * snoise((p + movement) * freq);
                         p = p * 1.56 + vec2(17.2, 43.7);
-                        amp *= 0.09; 
+                        amp *= 0.15; 
                         freq *= 1.78; 
                     }
                     return val;
@@ -1427,7 +1410,9 @@
                     
                     float ditherSize = 3.0;
                     vec2 gridPos = floor(gl_FragCoord.xy / ditherSize);
-                    float bayerVal = bayer16x16(gridPos);
+                    
+                    // OPTIMIZATION 3: Using bayer8x8 instead of bayer16x16 drops deep recursion penalty
+                    float bayerVal = bayer8x8(gridPos);
                     float centeredDither = bayerVal - 0.5;
                     
                     float levels = 3.0;
@@ -1448,7 +1433,8 @@
                     uResolution: { value: new THREE.Vector2(innerWidth, innerHeight) },
                     uTime: { value: 0 },
                     uScroll: { value: 0 }
-                }
+                },
+                precision: 'mediump' // OPTIMIZATION: Medium precision for WebGL
             });
             bgScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bgMaterial));
 
@@ -1458,7 +1444,9 @@
             camera.position.z = 10000;
             const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
             renderer.setSize(innerWidth, innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            
+            // OPTIMIZATION 4: Cap pixel ratio to 1.5 maximum for foreground (Retina max logic)
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
             renderer.outputEncoding = THREE.sRGBEncoding; 
 
             const vertexShader = `
@@ -1484,7 +1472,6 @@
                 }
                 float bayer4x4(vec2 a) { return bayer2x2(a) + bayer2x2(floor(a / 2.0)) / 4.0; }
                 float bayer8x8(vec2 a) { return bayer4x4(a) + bayer2x2(floor(a / 4.0)) / 16.0; }
-                float bayer16x16(vec2 a) { return bayer8x8(a) + bayer2x2(floor(a / 8.0)) / 64.0; }
 
                 void main() {
                     vec2 ratio = vec2(
@@ -1496,7 +1483,9 @@
                     vec3 pristineColor = texture2D(uTexture, finalUv).rgb;
                     
                     float ditherDotScale = 2.0; 
-                    float ditherValue = bayer16x16(vUv * (uMeshSize / ditherDotScale));
+                    
+                    // OPTIMIZATION 3: Downgraded 16x16 to 8x8 matrix 
+                    float ditherValue = bayer8x8(vUv * (uMeshSize / ditherDotScale));
                     float centeredDither = ditherValue - 0.5; 
                     
                     float luminance = dot(pristineColor, vec3(0.2126, 0.7152, 0.0722));
@@ -1544,6 +1533,12 @@
                 }
             }
 
+            // OPTIMIZATION 5: Precalculate vertical lines constants to pull Math ops out of the render loop
+            const vLineConstants = vLines.map((_, i) => ({
+                speed: 0.4 * Math.pow(0.92, i),
+                amplitude: 12 * Math.pow(0.9, i)
+            }));
+
             const tooltip = document.getElementById('cursor-tooltip');
             const tooltipMask = document.getElementById('tt-mask');
             const tooltipTitle = document.getElementById('tt-title');
@@ -1586,7 +1581,6 @@
                 a.href = data.link;
                 a.addEventListener('click', (e) => {
                     e.preventDefault();
-                    // On mobile, prevent clicking the image directly from transitioning
                     if (interactionsEnabled && isDesktop) {
                         transitionToPage(data.link);
                     }
@@ -1610,7 +1604,8 @@
                         uMeshSize: { value: new THREE.Vector2(100, 100) },
                         uImageSize: { value: new THREE.Vector2(800, 533) } 
                     },
-                    transparent: true
+                    transparent: true,
+                    precision: 'mediump' // OPTIMIZATION: Medium precision
                 });
 
                 const mesh = new THREE.Mesh(planeGeometry, material);
@@ -1625,17 +1620,9 @@
             
             let currentHoveredIndex = -1;
 
-            // --- ROBUST GLOBAL CLICK HANDLER ---
-            // Because DOM images are constantly moving, native click events are often dropped 
-            // if the mouse moves even 1 pixel during the click. This relies on our exact 
-            // 3D hit-testing state to guarantee clicks register every single time.
             window.addEventListener('click', (e) => {
                 if (!interactionsEnabled || isTransitioning) return;
-                
-                // Let fixed UI elements handle their own clicks
                 if (e.target.closest('.ui-layer, .proceed-btn, #loading-overlay, .tt-arrow-box')) return;
-
-                // ON MOBILE: Ignore screen taps so users must use the tooltip arrow button
                 if (!isDesktop) return;
 
                 if (currentHoveredIndex !== -1) {
@@ -1646,7 +1633,6 @@
 
             function triggerEnter(index) {
                 const mesh = meshes[index];
-                const domItem = DOMItems[index];
                 const data = galleryData[index];
                 
                 gsap.to(itemStates[index], { webglAlpha: 1, duration: 0.1, overwrite: 'auto' });
@@ -1671,7 +1657,6 @@
 
             function triggerLeave(index) {
                 const mesh = meshes[index];
-                const domItem = DOMItems[index];
                 
                 gsap.to(itemStates[index], { webglAlpha: 0, duration: 1.2, ease: 'power2.out', overwrite: 'auto' });
                 gsap.to(mesh.material.uniforms.uHover, { value: 0, duration: 1.2, ease: 'power2.out', overwrite: 'auto' });
@@ -1688,19 +1673,20 @@
                 gsap.to([tooltipTitle, tooltipCategory, tooltipArrow], { x: 20, opacity: 0, duration: 0.3, stagger: 0.05, ease: 'power2.in' });
             }
 
-            function getInterpolatedState(t) {
+            // OPTIMIZATION 6: Pass width and height arguments so we don't query the DOM 16 times per frame
+            function getInterpolatedState(t, winW, winH) {
                 let x, y, wPx, hPx, o;
                 if (isDesktop) {
                     const wave = Math.sin((t - 0.05) * Math.PI * 2);
                     const stretch = Math.abs(wave);
                     x = -0.1 + (t * 1.0); 
-                    const baseW = window.innerWidth * 0.18;
-                    const baseH = window.innerHeight * 0.32;
+                    const baseW = winW * 0.18;
+                    const baseH = winH * 0.32;
                     wPx = baseW * (1 + stretch * 0.85);
                     hPx = baseH * (1 - stretch * 0.15);
-                    const bottomBarPx = Math.max(100, Math.min(window.innerHeight * 0.14, 160));
-                    const bottomBarTopRatio = (window.innerHeight - bottomBarPx) / window.innerHeight;
-                    const maxImageHalfHeightRatio = (baseH * 0.85 / 2) / window.innerHeight;
+                    const bottomBarPx = Math.max(100, Math.min(winH * 0.14, 160));
+                    const bottomBarTopRatio = (winH - bottomBarPx) / winH;
+                    const maxImageHalfHeightRatio = (baseH * 0.85 / 2) / winH;
                     const maxY = bottomBarTopRatio - maxImageHalfHeightRatio;
                     const minY = maxImageHalfHeightRatio + 0.01; 
                     const centerY = (maxY + minY) / 2;
@@ -1714,8 +1700,8 @@
                     const wave = Math.sin((t - 0.02) * Math.PI * 4);
                     const stretch = Math.abs(wave);
                     x = 0.5 + (wave * 0.25);
-                    const baseW = window.innerWidth * 0.55;
-                    const baseH = window.innerHeight * 0.22;
+                    const baseW = winW * 0.55;
+                    const baseH = winH * 0.22;
                     wPx = baseW * (1 - stretch * 0.15);
                     hPx = baseH * (1 + stretch * 0.40);
                     if (t < 0.05) o = t / 0.05; 
@@ -1765,13 +1751,12 @@
                 const time = clock.getElapsedTime();
                 
                 targetScroll += 0.8; 
-                
                 let scrollVelocity = (targetScroll - currentScroll) * 0.06;
                 currentScroll += scrollVelocity;
                 
                 bgMaterial.uniforms.uTime.value = time;
-                bgMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
                 bgMaterial.uniforms.uScroll.value = currentScroll;
+                // OPTIMIZATION 7: Removed uResolution setting inside render loop. It's safe to update only on resize.
                 bgRenderer.render(bgScene, bgCamera);
 
                 // --- CURSOR DITHER RENDER PASS ---
@@ -1787,10 +1772,10 @@
                 }
 
                 vLines.forEach((line, i) => {
-                    const speed = 0.4 * Math.pow(0.92, i);
-                    const phase = (time * speed) + (currentScroll * 0.01);
-                    const amplitude = 12 * Math.pow(0.9, i);
-                    line.style.transform = `translateX(${Math.sin(phase) * amplitude}px)`;
+                    const c = vLineConstants[i];
+                    const phase = (time * c.speed) + (currentScroll * 0.01);
+                    // OPTIMIZATION 8: Used translate3d to force GPU composition instead of normal translate
+                    line.style.transform = `translate3d(${Math.sin(phase) * c.amplitude}px, 0, 0)`;
                 });
 
                 const globalOffset = currentScroll / 4000;
@@ -1800,13 +1785,17 @@
                 
                 const calculatedStates = [];
                 
+                // Cache window dimensions so we don't query DOM heavily every loop iteration
+                const winW = window.innerWidth;
+                const winH = window.innerHeight;
+                
                 DOMItems.forEach((item, index) => {
                     let t = (globalOffset + (index / galleryData.length) * 2.0) % 2.0;
                     if (t < 0) t = (t % 2.0) + 2.0; 
 
-                    const state = getInterpolatedState(t);
-                    const xPx = state.x * window.innerWidth;
-                    const yPx = state.y * window.innerHeight;
+                    const state = getInterpolatedState(t, winW, winH);
+                    const xPx = state.x * winW;
+                    const yPx = state.y * winH;
                     const finalW = state.wPx;
                     const finalH = state.hPx;
                     
@@ -1826,8 +1815,8 @@
                                 }
                             }
                         } else {
-                            const screenCenterX = window.innerWidth / 2;
-                            const screenCenterY = (window.innerHeight - 90) / 2; 
+                            const screenCenterX = winW / 2;
+                            const screenCenterY = (winH - 90) / 2; 
                             const dist = Math.hypot(xPx - screenCenterX, yPx - screenCenterY);
                             if (dist < minDist && dist < 180) {
                                 minDist = dist;
@@ -1851,13 +1840,14 @@
                     
                     const finalZ = cState.baseZ + (isHovered ? 5000 : 0);
 
-                    item.style.transform = `translate(${cState.xPx}px, ${cState.yPx}px) translate(-50%, -50%)`;
-                    item.style.width = `${cState.finalW}px`;
-                    item.style.height = `${cState.finalH}px`;
+                    // OPTIMIZATION 9: Removed sub-pixel translations via Math.round & chained translate3d hardware triggers
+                    item.style.transform = `translate3d(${Math.round(cState.xPx)}px, ${Math.round(cState.yPx)}px, 0) translate3d(-50%, -50%, 0)`;
+                    item.style.width = `${Math.round(cState.finalW)}px`;
+                    item.style.height = `${Math.round(cState.finalH)}px`;
                     item.style.zIndex = Math.round(finalZ);
                     item.style.opacity = cState.o;
 
-                    mesh.position.set(cState.xPx - innerWidth / 2, -(cState.yPx - innerHeight / 2), finalZ);
+                    mesh.position.set(cState.xPx - winW / 2, -(cState.yPx - winH / 2), finalZ);
                     mesh.scale.set(cState.finalW, cState.finalH, 1);
                     mesh.material.uniforms.uOpacity.value = cState.o * iState.webglAlpha;
                     mesh.material.uniforms.uMeshSize.value.set(cState.finalW, cState.finalH);
@@ -1876,8 +1866,8 @@
                 if (!isDesktop && currentHoveredIndex !== -1) {
                     const tWidth = tooltip.offsetWidth || 300;
                     const tHeight = tooltip.offsetHeight || 60;
-                    xTo(window.innerWidth / 2 - tWidth / 2);
-                    yTo(window.innerHeight - 90 - tHeight - 20); 
+                    xTo(winW / 2 - tWidth / 2);
+                    yTo(winH - 90 - tHeight - 20); 
                 }
 
                 renderer.render(scene, camera);
@@ -1909,11 +1899,3 @@
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
