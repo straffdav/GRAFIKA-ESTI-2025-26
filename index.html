@@ -45,15 +45,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            mix-blend-mode: difference;
         }
 
-        #cursor-dither-canvas {
+        #cursor-bg-gif {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            object-fit: contain;
             pointer-events: none;
+            will-change: transform;
         }
 
         #cursor-spin-wrapper {
@@ -422,13 +425,14 @@
             height: 100%; 
             margin-right: 0.75rem; 
             width: auto;
+            max-width: none;
             flex-shrink: 0;
             display: block;
         }
 
         @keyframes scrollMarquee {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); } 
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-50%, 0, 0); } 
         }
 
         .static-track {
@@ -450,8 +454,8 @@
         .menu-item.jelentkezz-item .marquee-track { animation: scrollMarqueeReverse 60s linear infinite; }
 
         @keyframes scrollMarqueeReverse {
-            0% { transform: translateX(-50%); }
-            100% { transform: translateX(0); }
+            0% { transform: translate3d(-50%, 0, 0); }
+            100% { transform: translate3d(0, 0, 0); }
         }
 
         .bottom-lines {
@@ -497,7 +501,7 @@
             transform-origin: center center;
             will-change: transform, opacity;
             background-color: rgba(0, 0, 0, 1); 
-            box-shadow: 0px 4px 44.3px 35px rgba(0, 0, 0, 0.55);
+            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.4);
             transition: box-shadow 0.3s ease;
         }
 
@@ -508,7 +512,7 @@
             display: block;
         }
 
-        .gallery-item:hover { box-shadow: 0px 8px 50px 40px rgba(0, 0, 0, 0.65); }
+        .gallery-item:hover { box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.6); }
 
         /* --- FLOATING CURSOR TOOLTIP --- */
         .floating-tooltip {
@@ -586,7 +590,7 @@
 
     <!-- Custom Cursor Overlay -->
     <div id="custom-cursor">
-        <canvas id="cursor-dither-canvas"></canvas>
+        <img src="hover.gif" id="cursor-bg-gif" alt="">
         <div id="cursor-spin-wrapper">
             <div class="cursor-icon" id="cursor-icon">
                 <div class="c-plus" id="c-plus-1">
@@ -789,6 +793,7 @@
             const customCursor = document.getElementById('custom-cursor');
             const cursorIcon = document.getElementById('cursor-icon');
             const cPlus2 = document.getElementById('c-plus-2');
+            const cursorGif = document.getElementById('cursor-bg-gif');
             let isCursorHovering = false;
             let hoverTimeline = null;
             
@@ -801,7 +806,7 @@
                 const target = e.target.closest('a, button, .tt-arrow-box, .menu-item.highlight, .sound-switch');
                 if (target && !isCursorHovering) {
                     isCursorHovering = true;
-                    gsap.to(cursorDitherMaterial.uniforms.uHoverState, { value: 1, duration: 0.3, ease: "power2.out" });
+                    gsap.to(cursorGif, { scale: 1.6, duration: 0.3, ease: "power2.out" });
                     if (hoverTimeline) hoverTimeline.kill();
                     hoverTimeline = gsap.timeline();
                     hoverTimeline.to(cPlus2, { rotation: 45, duration: 0.15, ease: "back.out(2)" })
@@ -815,7 +820,7 @@
                 if (target && isCursorHovering) {
                     if (e.relatedTarget && e.relatedTarget.closest('a, button, .tt-arrow-box, .menu-item.highlight, .sound-switch')) return;
                     isCursorHovering = false;
-                    gsap.to(cursorDitherMaterial.uniforms.uHoverState, { value: 0, duration: 0.3, ease: "power2.out" });
+                    gsap.to(cursorGif, { scale: 1.0, duration: 0.3, ease: "power2.out" });
                     if (hoverTimeline) hoverTimeline.kill();
                     let currentRot = gsap.getProperty(cursorIcon, "rotation") || 0;
                     let targetRot = Math.round(currentRot / 90) * 90;
@@ -823,59 +828,6 @@
                     gsap.to(cPlus2, { rotation: 0, duration: 0.3, ease: "power2.out", overwrite: "auto" });
                 }
             });
-
-            // --- CURSOR DITHER WEBGL SETUP ---
-            const cursorCanvas = document.getElementById('cursor-dither-canvas');
-            const cursorRenderer = new THREE.WebGLRenderer({ canvas: cursorCanvas, alpha: true, antialias: false });
-            cursorRenderer.setSize(140, 140);
-            const cursorScene = new THREE.Scene();
-            const cursorCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-            
-            const cursorDitherMaterial = new THREE.ShaderMaterial({
-                vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }`,
-                // OPTIMIZATION: Added precision modifier
-                fragmentShader: `
-                    precision mediump float; 
-                    uniform float uTime;
-                    uniform float uHoverState;
-                    uniform float uScrollVelocity; 
-                    varying vec2 vUv;
-                    
-                    float bayer2x2(vec2 a) {
-                        vec2 p = floor(mod(a, 2.0));
-                        return (p.x * 2.0 + p.y * 3.0 - p.x * p.y * 4.0) / 4.0;
-                    }
-                    float bayer4x4(vec2 a) { return bayer2x2(a) + bayer2x2(floor(a / 2.0)) / 4.0; }
-                    float bayer8x8(vec2 a) { return bayer4x4(a) + bayer2x2(floor(a / 4.0)) / 16.0; }
-
-                    void main() {
-                        vec2 center = vec2(0.5);
-                        float dist = distance(vUv, center);
-                        float baseRadius = mix(0.18, 0.40, uHoverState);
-                        float shrink = clamp(uScrollVelocity * 0.015, 0.0, 0.14);
-                        baseRadius = max(0.04, baseRadius - shrink);
-                        
-                        float flicker = (sin(uTime * 15.0) * 0.015 + cos(uTime * 25.0) * 0.01) * (1.0 + uHoverState * 2.0);
-                        float radius = baseRadius + flicker;
-                        
-                        if(dist > radius + 0.1) discard; 
-                        
-                        float intensity = 1.0 - smoothstep(radius - 0.05, radius + 0.1, dist);
-                        float bayerVal = bayer8x8(gl_FragCoord.xy * 0.5); 
-                        float dithered = step(bayerVal, intensity);
-                        
-                        if(dithered < 0.1) discard; 
-                        gl_FragColor = vec4(0.65, 0.65, 0.65, 0.7); 
-                    }
-                `,
-                uniforms: {
-                    uTime: { value: 0 },
-                    uHoverState: { value: 0 },
-                    uScrollVelocity: { value: 0 } 
-                },
-                transparent: true
-            });
-            cursorScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), cursorDitherMaterial));
 
             // --- LOADING LOGIC ---
             let isAppLoaded = false;
@@ -1419,11 +1371,8 @@
                 bgMaterial.uniforms.uScroll.value = currentScroll;
                 bgRenderer.render(bgScene, bgCamera);
 
-                // 2. CURSOR RENDER
+                // 2. CURSOR SPIN SYNC
                 if (isDesktop) {
-                    cursorDitherMaterial.uniforms.uTime.value = time;
-                    cursorDitherMaterial.uniforms.uScrollVelocity.value = Math.abs(scrollVelocity); 
-                    cursorRenderer.render(cursorScene, cursorCamera);
                     const cursorSpinWrapper = document.getElementById('cursor-spin-wrapper');
                     if (cursorSpinWrapper) cursorSpinWrapper.style.transform = `rotate(${currentScroll * 0.3}deg)`;
                 }
@@ -1489,25 +1438,22 @@
                     const iState = itemStates[index];
                     const isHovered = (index === currentHoveredIndex);
                     
-                    // OPTIMIZATION: Visibility culling. Do not process/render transparent items!
+                    // OPTIMIZATION: Safari fix. Instead of visibility: hidden which destroys the GPU layer,
+                    // we use pointer-events: none and rely on opacity to hide it.
                     const isVisible = cState.o > 0.005;
                     mesh.visible = isVisible;
                     
-                    if (!isVisible) {
-                        item.style.visibility = 'hidden';
-                        return; // Stop applying styles and math on invisible items
-                    }
-                    item.style.visibility = 'visible';
+                    item.style.pointerEvents = isVisible ? 'auto' : 'none';
 
                     const finalZ = cState.baseZ + (isHovered ? 5000 : 0);
 
-                    // OPTIMIZATION: Use transform: scale() instead of style.width/height to avoid Layout recalculations
+                    // OPTIMIZATION: Use transform: scale() and translate3d to force hardware acceleration in Safari
                     const tx = Math.round(cState.xPx);
                     const ty = Math.round(cState.yPx);
                     const scaleX = cState.finalW / 800; // Base width is 800
                     const scaleY = cState.finalH / 533; // Base height is 533
                     
-                    item.style.transform = `translate(${tx}px, ${ty}px) translate(-50%, -50%) scale(${scaleX}, ${scaleY})`;
+                    item.style.transform = `translate3d(${tx}px, ${ty}px, 0) translate(-50%, -50%) scale(${scaleX}, ${scaleY})`;
                     item.style.zIndex = Math.round(finalZ);
                     item.style.opacity = cState.o.toFixed(3);
 
@@ -1561,3 +1507,4 @@
     </script>
 </body>
 </html>
+
