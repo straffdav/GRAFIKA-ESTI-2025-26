@@ -1,0 +1,1909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dobó Ráhel</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+
+    
+    <!-- GSAP for smooth animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- Three.js for WebGL Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        /* --- CSS Reset & Base Setup --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            overscroll-behavior: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- CUSTOM CURSOR --- */
+        @media (pointer: fine) {
+            * { cursor: none !important; }
+        }
+
+        #custom-cursor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 140px; 
+            height: 140px;
+            pointer-events: none;
+            z-index: 9999999;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #cursor-dither-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        #cursor-spin-wrapper {
+            position: relative;
+            width: 24px;
+            height: 24px;
+            z-index: 2;
+        }
+
+        .c-pluses, .c-arrow {
+            position: absolute;
+            top: 0; 
+            left: 0;
+            width: 100%; 
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            will-change: transform, opacity;
+        }
+
+        .c-arrow {
+            opacity: 0;
+        }
+
+        .c-plus {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            transform-origin: center;
+            will-change: transform;
+        }
+
+        .c-line {
+            position: absolute;
+            background-color: #fff;
+        }
+
+        .c-horizontal { width: 100%; height: 1.5px; top: 50%; left: 0; transform: translateY(-50%); }
+        .c-vertical { width: 1.5px; height: 100%; top: 0; left: 50%; transform: translateX(-50%); }
+
+        .c-arrow svg {
+            width: 24px;
+            height: 24px;
+            display: block;
+        }
+
+        /* --- BACKGROUND DITHER CANVAS --- */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.4; 
+        }
+
+        /* --- DESKTOP ARTWORK WEBGL CANVAS --- */
+        #art-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none; /* Let clicks pass through to DOM */
+            z-index: 1; /* Sits above bg-canvas, below viewport */
+        }
+
+        /* --- PANNING CANVAS SYSTEM --- */
+        #pan-viewport {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 2; /* Sits above art-canvas */
+            overflow: hidden; 
+        }
+
+        #pan-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 212vw; 
+            height: 130vw; 
+            will-change: transform;
+            pointer-events: none; 
+        }
+
+        #pan-canvas > * {
+            pointer-events: auto;
+        }
+
+        /* --- ARTWORK SUBPAGE SPECIFIC CONTENT --- */
+        .info-section {
+            position: absolute;
+            top: 28vw;
+            left: 6vw;
+            width: 39vw;
+            max-width: 640px;
+            z-index: 10;
+            padding: 2vw;
+        }
+
+        .info-section::before {
+            content: '';
+            position: absolute;
+            top: -8vw;
+            bottom: -8vw;
+            left: -8vw;
+            right: -8vw;
+            z-index: -1;
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.5) 15%, transparent 65%);
+            backdrop-filter: blur(48px);
+            -webkit-backdrop-filter: blur(48px);
+            -webkit-mask-image: radial-gradient(ellipse at center, black 15%, transparent 65%);
+            mask-image: radial-gradient(ellipse at center, black 15%, transparent 65%);
+            pointer-events: none;
+        }
+
+        .info-section h1 {
+            font-size: clamp(3rem, 5vw, 6rem);
+            font-weight: 700;
+            letter-spacing: 2px;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .info-section p {
+            font-size: clamp(1rem, 1.1vw, 1.3rem);
+            line-height: 1.35;
+            color: rgba(255, 255, 255, 0.85);
+            font-weight: 300;
+        }
+
+        /* --- MASKED REVEAL & TEXT STYLES --- */
+        .text-mask {
+            overflow: hidden;
+            display: block;
+        }
+
+        .delayed-reveal {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(120%);
+            will-change: transform, opacity;
+        }
+
+        .artwork-item {
+            position: absolute;
+            background-color: #111;
+            aspect-ratio: 16 / 9;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.4s ease;
+            overflow: hidden;
+        }
+
+        .parallax-wrap {
+            position: absolute;
+            top: -6%;
+            left: -6%;
+            width: 112%;
+            height: 112%;
+            will-change: transform;
+        }
+
+        .parallax-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .artwork-item:hover {
+            z-index: 20;
+        }
+
+        #art-1 { top: 76.125vw; left: 8vw; width: 58vw; z-index: 2; }
+        #art-2 { top: 48.5vw; left: 70vw; width: 100vw; z-index: 1; } 
+        #art-3 { top: 4vw; left: 60vw; width: 72vw; z-index: 1; }
+        #art-4 { top: 4vw; left: 136vw; width: 72vw; z-index: 3; }
+
+        /* --- FIXED UI LAYER --- */
+        .ui-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 10000;
+        }
+
+        .logo-container {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 1rem;
+            pointer-events: auto;
+        }
+
+        .logo-img { height: 36px; width: auto; display: block; }
+
+        .top-right-logo-container {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            align-items: flex-start;
+            pointer-events: auto;
+        }
+
+        .bkszc-logo-img { height: 52px; width: auto; display: block; }
+
+        .sound-switch {
+            position: relative; 
+            border: 1px solid #fff;
+            background: transparent;
+            color: #fff;
+            height: 22px; 
+            width: 90px;
+            pointer-events: auto;
+            font-family: inherit;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .switch-block {
+            position: absolute;
+            top: 0; left: 0; height: 100%; width: 22px; 
+            background-color: #fff;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+            z-index: 2;
+        }
+
+        .switch-block::after {
+            content: ''; position: absolute; top: 0; bottom: 0; right: -1px; width: 1px;
+            background-color: #fff;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .switch-text-container {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; align-items: center; z-index: 1;
+        }
+
+        .text-on, .text-off {
+            position: absolute; font-size: 0.6rem; letter-spacing: 1px;
+            text-transform: uppercase; width: 66px; text-align: center;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            line-height: 20px;
+        }
+
+        .text-on { left: 22px; transform: translateX(0); }
+        .text-off { left: 0; transform: translateX(-68px); }
+        .sound-switch.is-off .switch-block { transform: translateX(66px); background-color: transparent; }
+        .sound-switch.is-off .switch-block::after { transform: translateX(-22px); }
+        .sound-switch.is-off .text-on { transform: translateX(68px); }
+        .sound-switch.is-off .text-off { transform: translateX(0); }
+
+        /* Scroll Gradient Overlay - Desktop hidden by default */
+        .scroll-fade-gradient {
+            display: none;
+        }
+
+        /* Bottom Bar UI */
+        .bottom-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100vw;
+            height: clamp(100px, 14vh, 160px);
+            display: flex;
+            border-top: 1.5px solid #fff;
+            background-color: #000;
+            pointer-events: auto;
+            will-change: transform;
+        }
+
+        .bottom-giant-text {
+            flex: 0 0 auto;
+            display: flex;
+            border-right: 1.5px solid #fff;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .bottom-logo-picture { height: 100%; display: block; }
+        .bottom-logo-img { height: 100%; width: auto; max-width: none; object-fit: contain; display: block; }
+
+        .bottom-menu {
+            flex: 1;
+            min-width: 140px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1.5px solid #fff;
+        }
+
+        .menu-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            border-bottom: 1.5px solid #fff;
+            font-size: clamp(0.75rem, 1vw, 1.2rem);
+            font-weight: 400;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        .menu-item:last-child { border-bottom: none; }
+
+        .clickable-menu-item {
+            cursor: none; 
+            text-decoration: none; 
+            color: inherit;
+            background-color: #000; 
+            isolation: isolate; 
+        }
+
+        .clickable-menu-item::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #fff; mix-blend-mode: difference; opacity: 0;
+            transition: opacity 0.3s ease; pointer-events: none; z-index: 20; 
+        }
+
+        .clickable-menu-item:hover::after { opacity: 1; }
+
+        /* Infinite Marquee Fixes */
+        .menu-item.marquee-container {
+            padding: 0; overflow: hidden; position: relative; display: flex; align-items: stretch;
+        }
+
+        .marquee-track {
+            display: flex; align-items: stretch; height: 100%; width: max-content;
+            animation: scrollMarquee 30s linear infinite; will-change: transform;
+        }
+
+        .marquee-item { height: 100%; margin-right: 0.75rem; width: auto; flex-shrink: 0; display: block; }
+
+        @keyframes scrollMarquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); } 
+        }
+
+        .static-track { display: flex; align-items: stretch; height: 100%; width: max-content; }
+        .static-item { height: 100%; margin-right: 0.75rem; width: auto; flex-shrink: 0; display: block; }
+
+        .menu-item.jelentkezz-item { border-bottom: none; }
+        .menu-item.jelentkezz-item .marquee-track { animation: scrollMarqueeReverse 60s linear infinite; }
+
+        @keyframes scrollMarqueeReverse {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0); }
+        }
+
+        /* --- NEW BACK BUTTON SECTION --- */
+        .back-button-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-left: 1.5px solid #fff;
+            height: 100%;
+            background-color: #000;
+            position: relative;
+        }
+
+        .back-gif {
+            height: 100%;
+            width: auto;
+            display: block;
+            object-fit: contain;
+        }
+
+        .bottom-lines {
+            width: 15vw; 
+            min-width: 80px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden; 
+        }
+
+        .lines-row { flex: 1; border-bottom: 1.5px solid #fff; width: 100%; }
+        .lines-row:last-child { border-bottom: none; }
+
+        .vertical-lines-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
+        }
+
+        .v-line {
+            position: absolute; top: 0; bottom: 0; width: 1.5px;
+            background-color: #fff; will-change: transform;
+        }
+
+        /* --- MOBILE PIXEL REVEAL CANVAS --- */
+        .pixel-reveal-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* --- DESKTOP SPECIFIC OVERRIDES --- */
+        @media (min-width: 769px) {
+            :root {
+                --bottom-bar-h: clamp(100px, 14vh, 160px);
+                --gallery-h: calc(100vh - var(--bottom-bar-h));
+            }
+            
+            .artwork-item { 
+                background: transparent !important; 
+                max-height: calc(var(--gallery-h) - 4rem);
+                max-width: calc((var(--gallery-h) - 4rem) * (16 / 9));
+            }
+            
+            .parallax-wrap img { opacity: 0 !important; }
+        }
+
+        /* --- MOBILE LAYOUT OVERRIDES --- */
+        @media (max-width: 768px) {
+            #custom-cursor { display: none !important; }
+            #art-canvas { display: none !important; } 
+            .bottom-bar { height: 90px; }
+            .bottom-giant-text { padding: 0; }
+            .bottom-menu { width: 35vw; min-width: 140px; }
+            .menu-item { font-size: 0.7rem; padding: 0 0.5rem; }
+            
+            .bottom-lines { width: 15vw; min-width: 60px; }
+
+            .scroll-fade-gradient {
+                display: block;
+                position: absolute;
+                bottom: 90px;
+                left: 0;
+                width: 100vw;
+                height: 15vh;
+                background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.7) 50%, rgba(0,0,0,1) 100%);
+                z-index: 10;
+                pointer-events: none;
+            }
+
+            #pan-viewport { 
+                overflow-y: auto; 
+                overflow-x: hidden;
+                -webkit-overflow-scrolling: touch; 
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+
+            #pan-viewport::-webkit-scrollbar {
+                display: none; 
+            }
+
+            #pan-canvas {
+                display: flex;
+                flex-direction: column;
+                width: 100vw;
+                height: auto;
+                padding-top: 180px; 
+                padding-bottom: 220px; 
+                gap: 0;
+                transform: none !important; 
+            }
+
+            .artwork-item {
+                position: relative !important;
+                top: auto !important;
+                left: auto !important;
+                margin: 0;
+                box-shadow: none;
+                transform-origin: center center;
+                will-change: transform;
+                background-color: transparent !important; 
+            }
+
+            .parallax-wrap {
+                top: 0; left: 0; width: 100%; height: 100%;
+                transform: none !important;
+            }
+            
+            .parallax-wrap img {
+                opacity: 0; 
+            }
+
+            #art-1 {
+                order: 1;
+                align-self: flex-end;
+                width: 75vw !important;
+                margin-right: 0 !important;
+                margin-bottom: 2rem !important;
+            }
+
+            .info-section { 
+                order: 2;
+                position: relative !important; 
+                top: auto !important; 
+                left: auto !important; 
+                width: 100vw;
+                max-width: 100%;
+                padding: 3rem 1.5rem 4rem 1.5rem; 
+                margin-bottom: 2rem !important; 
+                transform-origin: center center;
+                will-change: transform;
+            }
+            .info-section::before { display: none; }
+            .info-section h1 {
+                font-size: clamp(2.5rem, 10vw, 3.5rem);
+                white-space: normal;
+                margin-bottom: 1rem;
+            }
+
+            #art-2 { 
+                order: 3;
+                align-self: center;
+                width: 100vw !important; 
+                margin-bottom: 2.5rem !important;
+            }
+
+            #art-3 { 
+                order: 4;
+                align-self: flex-start;
+                width: 90vw !important; 
+                margin-left: 0 !important;
+                margin-bottom: 2.5rem !important;
+            }
+
+            #art-4 { 
+                order: 5;
+                align-self: flex-end;
+                width: 75vw !important; 
+                margin-right: 0 !important;
+                margin-bottom: 2.5rem !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Custom Cursor Overlay -->
+    <div id="custom-cursor">
+        <canvas id="cursor-dither-canvas"></canvas>
+        <div id="cursor-spin-wrapper">
+            <div class="c-pluses" id="c-pluses">
+                <div class="c-plus" id="c-plus-1">
+                    <div class="c-line c-horizontal"></div>
+                    <div class="c-line c-vertical"></div>
+                </div>
+                <div class="c-plus" id="c-plus-2">
+                    <div class="c-line c-horizontal"></div>
+                    <div class="c-line c-vertical"></div>
+                </div>
+            </div>
+            <div class="c-arrow" id="c-arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- Static UI Overlay (Logos remain completely fixed during transitions) -->
+    <div class="ui-layer" style="z-index: 10001;">
+        <div class="logo-container">
+            <a href="https://kreativtechnikum.hu/" class="clickable-element">
+                <img src="logo.svg" alt="Kreatív és Kézművesipari Technikum" class="logo-img" onerror="this.style.display='none'">
+            </a>
+            <button class="sound-switch is-on" id="sound-toggle">
+                <div class="switch-block"></div>
+                <div class="switch-text-container">
+                    <span class="text-on">SOUND</span>
+                    <span class="text-off">SILENCE</span>
+                </div>
+            </button>
+        </div>
+        
+        <div class="top-right-logo-container">
+            <a href="https://www.bkszc.hu/" class="clickable-element">
+                <img src="bkscLogo.svg" alt="BKSZC" class="bkszc-logo-img" onerror="this.style.display='none'">
+            </a>
+        </div>
+    </div>
+
+    <!-- WRAPPER: Animates the entire page UP as it opens, bringing the bottom bar along with it -->
+    <div id="page-wrapper" style="width: 100%; height: 100%; position: relative; visibility: hidden;">
+        <!-- Background Dither Canvas -->
+        <canvas id="bg-canvas"></canvas>
+        
+        <!-- Desktop Artwork WebGL Canvas -->
+        <canvas id="art-canvas"></canvas>
+
+        <!-- Panning Viewport & Canvas -->
+        <div id="pan-viewport">
+            <div id="pan-canvas">
+                
+                <!-- Left Locked Information -->
+                <div class="info-section">
+                    <div class="text-mask">
+                        <h1 class="delayed-reveal scramble-text" data-text="Dobó Ráhel">Dobó Ráhel</h1>
+                    </div>
+                    <div class="text-mask">
+                        <p class="delayed-reveal scramble-text" data-text="A METAHuman Academy vizuális rendszere a futurisztikus technológiai esztétikát ötvözi egy játékos, űrinspirálta világ minimalista megközelítésével.">A METAHuman Academy vizuális rendszere a futurisztikus technológiai esztétikát ötvözi egy játékos, űrinspirálta világ minimalista megközelítésével.</p>
+                    </div>
+                    <br>
+                    <div class="text-mask">
+                        <p class="delayed-reveal scramble-text" data-text="A bolygók, pályavonalak, geometrikus formák és élénk színek egységes, modern vizuális élményt teremtenek, amely a kreativitás, a felfedezés, a művészet és a technológia kapcsolatát szimbolizálja.">A bolygók, pályavonalak, geometrikus formák és élénk színek egységes, modern vizuális élményt teremtenek, amely a kreativitás, a felfedezés, a művészet és a technológia kapcsolatát szimbolizálja.</p>
+                    </div>
+                </div>
+
+                <!-- 4 Artworks (16:9 Aspect Ratio) spread across the virtual canvas -->
+                <div class="artwork-item" id="art-1">
+                    <div class="parallax-wrap" data-depth="1.8">
+                        <img src="gallery/rahel/rahel1.webp" crossorigin="anonymous" alt="Dobó Ráhel Artwork 1">
+                    </div>
+                </div>
+                
+                <div class="artwork-item" id="art-2">
+                    <div class="parallax-wrap" data-depth="1.0">
+                        <img src="gallery/rahel/rahel2.webp" crossorigin="anonymous" alt="Dobó Ráhel Artwork 2">
+                    </div>
+                </div>
+                
+                <div class="artwork-item" id="art-3">
+                    <div class="parallax-wrap" data-depth="1.2">
+                        <img src="gallery/rahel/rahel3.webp" crossorigin="anonymous" alt="Dobó Ráhel Artwork 3">
+                    </div>
+                </div>
+                
+                <div class="artwork-item" id="art-4">
+                    <div class="parallax-wrap" data-depth="2.5">
+                        <img src="gallery/rahel/rahel4.webp" crossorigin="anonymous" alt="Dobó Ráhel Artwork 4">
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Animated UI Overlay (Moves with page transition) -->
+        <div class="ui-layer">
+            <!-- Gradient Fade Mask for Mobile Scrolling -->
+            <div class="scroll-fade-gradient"></div>
+
+            <!-- Sticky Bottom Bar -->
+            <div class="bottom-bar">                
+                <div class="bottom-giant-text">
+                    <picture class="bottom-logo-picture">
+                        <source media="(max-width: 768px)" srcset="grafikaesti_phone.svg">
+                        <img src="grafikaesti.svg" alt="Grafika Esti" class="bottom-logo-img" onerror="this.style.display='none'">
+                    </picture>
+                </div>
+                <div class="bottom-menu">
+                    <a href="#" class="menu-item marquee-container clickable-menu-item">
+                        <div class="marquee-track">
+                            <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                            <!-- Duplicate Set for Seamless Loop -->
+                            <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                        </div>
+                    </a>
+                    <a href="#" class="menu-item marquee-container clickable-menu-item">
+                        <div class="static-track">
+                            <img src="aziskolarol.gif" alt="Az iskoláról" class="static-item" onerror="this.style.display='none'">
+                            <img src="aziskolarol.gif" alt="Az iskoláról" class="static-item" onerror="this.style.display='none'">
+                            <img src="aziskolarol.gif" alt="Az iskoláról" class="static-item" onerror="this.style.display='none'">
+                            <img src="aziskolarol.gif" alt="Az iskoláról" class="static-item" onerror="this.style.display='none'">
+                            <img src="aziskolarol.gif" alt="Az iskoláról" class="static-item" onerror="this.style.display='none'">
+                            <img src="aziskolarol.gif" alt="Az iskoláról" class="static-item" onerror="this.style.display='none'">
+                        </div>
+                    </a>
+                    <a href="#" class="menu-item marquee-container jelentkezz-item clickable-menu-item">
+                        <div class="marquee-track">
+                            <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                            <!-- Duplicate Set for Seamless Loop -->
+                            <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                            <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                        </div>
+                    </a>
+                </div>
+                
+                <div class="bottom-lines">
+                    <div class="lines-row"></div>
+                    <div class="lines-row"></div>
+                    <div class="lines-row"></div>
+                    <div class="vertical-lines-overlay" id="vertical-lines"></div>
+                </div>
+
+                <!-- Back Button -->
+                <a href="index.html" class="back-button-container clickable-menu-item" id="back-button">
+                    <img src="back.gif" alt="Back" class="back-gif" onerror="this.style.display='none'">
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            
+            let isDesktop = window.innerWidth >= 768;
+
+            // --- PAGE ENTER / EXIT TRANSITION LOGIC ---
+            let isTransitioning = false;
+            
+            // On load, the entire page slides UP, while the logos slide DOWN from above the screen
+            gsap.set('#page-wrapper', { y: window.innerHeight, visibility: 'visible' });
+            gsap.set('.logo-container, .top-right-logo-container', { y: -150 });
+
+            gsap.to('#page-wrapper', {
+                y: 0,
+                duration: 1.0,
+                ease: 'power3.out',
+                delay: 0.1,
+                onComplete: () => {
+                    gsap.set('#page-wrapper', { clearProps: 'transform' });
+                }
+            });
+
+            gsap.to('.logo-container, .top-right-logo-container', {
+                y: 0,
+                duration: 1.0,
+                ease: 'power3.out',
+                delay: 0.1,
+                onComplete: () => {
+                    gsap.set('.logo-container, .top-right-logo-container', { clearProps: 'transform' });
+                }
+            });
+
+            // On Back click, slide DOWN pushing the user back, and slide the logos UP and out
+            function transitionToPage(url) {
+                if (isTransitioning) return;
+                isTransitioning = true;
+                
+                gsap.to('#page-wrapper', {
+                    y: window.innerHeight,
+                    duration: 1.0,
+                    ease: 'power3.in',
+                    onComplete: () => {
+                        window.location.href = url;
+                    }
+                });
+
+                gsap.to('.logo-container, .top-right-logo-container', {
+                    y: -150,
+                    duration: 1.0,
+                    ease: 'power3.in'
+                });
+            }
+
+            const backBtn = document.getElementById('back-button');
+            if (backBtn) {
+                backBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    transitionToPage(backBtn.getAttribute('href'));
+                });
+            }
+
+
+            // --- AUDIO UNLOCK, SETUP & PERSISTENCE ---
+            // Fetch saved preference, default to true
+            let isSoundEnabled = sessionStorage.getItem('isSoundEnabled') !== 'false';
+            let isAudioUnlocked = false; 
+
+            const bgMusic = new Audio('chime.mp3');
+            bgMusic.loop = true; 
+            bgMusic.volume = 0.4; 
+
+            const artEnterSound = new Audio('mouseenter.mp3');
+            const artLeaveSound = new Audio('mouseleave.mp3');
+            artEnterSound.volume = 0.4;
+            artLeaveSound.volume = 0.4;
+
+            const tingSoundURL = 'ting.mp3';
+            const tingAudioPool = [];
+            const tingPoolSize = 5;
+            let tingPoolIndex = 0;
+
+            for (let i = 0; i < tingPoolSize; i++) {
+                const a = new Audio(tingSoundURL);
+                a.volume = 0.3;
+                if ('preservesPitch' in a) a.preservesPitch = false;
+                if ('mozPreservesPitch' in a) a.mozPreservesPitch = false;
+                if ('webkitPreservesPitch' in a) a.webkitPreservesPitch = false;
+                tingAudioPool.push(a);
+            }
+
+            // Restore playback exact timestamp from previous page
+            const savedTime = sessionStorage.getItem('bgMusicTime');
+            if (savedTime !== null) {
+                bgMusic.currentTime = parseFloat(savedTime);
+            }
+
+            // Save playback time right before leaving the page
+            window.addEventListener('beforeunload', () => {
+                sessionStorage.setItem('bgMusicTime', bgMusic.currentTime);
+                sessionStorage.setItem('isSoundEnabled', isSoundEnabled);
+            });
+
+            // Centralized unlock logic
+            const tryUnlockAudio = () => {
+                if (isAudioUnlocked) return;
+                
+                // Initialize sfx
+                tingAudioPool.forEach(a => {
+                    const p = a.play();
+                    if (p !== undefined) {
+                        p.then(() => { a.pause(); a.currentTime = 0; }).catch(() => {});
+                    }
+                });
+
+                [artEnterSound, artLeaveSound].forEach(a => {
+                    const p = a.play();
+                    if (p !== undefined) {
+                        p.then(() => { a.pause(); a.currentTime = 0; }).catch(() => {});
+                    }
+                });
+
+                if (isSoundEnabled) {
+                    const bgPromise = bgMusic.play();
+                    if (bgPromise !== undefined) {
+                        bgPromise.then(() => {
+                            isAudioUnlocked = true;
+                            // Remove stealth listeners on success
+                            ['pointerdown', 'touchstart', 'keydown', 'wheel', 'mousemove'].forEach(e => {
+                                window.removeEventListener(e, tryUnlockAudio);
+                            });
+                        }).catch(() => {
+                            // Still blocked by browser, leave listeners active to try again
+                            isAudioUnlocked = false; 
+                        });
+                    }
+                } else {
+                    isAudioUnlocked = true; 
+                }
+            };
+
+            // Attempt Autoplay Seamlessly if coming from another page
+            if (isSoundEnabled) {
+                bgMusic.play().then(() => {
+                    isAudioUnlocked = true;
+                }).catch(() => {
+                    // Browser Autoplay blocked us. Attach stealth listeners to unlock instantly 
+                    // the moment the user moves the mouse, scrolls, or touches the screen.
+                    ['pointerdown', 'touchstart', 'keydown', 'wheel', 'mousemove'].forEach(e => {
+                        window.addEventListener(e, tryUnlockAudio, { passive: true });
+                    });
+                });
+            }
+
+            const soundToggleBtn = document.getElementById('sound-toggle');
+            
+            // Set initial UI state based on session preference
+            if (!isSoundEnabled) {
+                soundToggleBtn.classList.remove('is-on');
+                soundToggleBtn.classList.add('is-off');
+            }
+
+            soundToggleBtn.addEventListener('click', () => {
+                tryUnlockAudio();
+                isSoundEnabled = !isSoundEnabled;
+                sessionStorage.setItem('isSoundEnabled', isSoundEnabled);
+                if (isSoundEnabled) {
+                    soundToggleBtn.classList.remove('is-off');
+                    soundToggleBtn.classList.add('is-on');
+                    bgMusic.play().catch(() => {});
+                } else {
+                    soundToggleBtn.classList.remove('is-on');
+                    soundToggleBtn.classList.add('is-off');
+                    bgMusic.pause();
+                }
+            });
+
+            function playTingSound(pitchRate = 1.0) {
+                if (!isAudioUnlocked || !isSoundEnabled) return;
+                const a = tingAudioPool[tingPoolIndex];
+                a.playbackRate = pitchRate;
+                a.currentTime = 0;
+                const p = a.play();
+                if (p !== undefined) p.catch(() => {});
+                tingPoolIndex = (tingPoolIndex + 1) % tingPoolSize;
+            }
+
+            // Hover ting sounds on menu items
+            const clickableMenuItems = document.querySelectorAll('.clickable-menu-item');
+            clickableMenuItems.forEach((item) => {
+                item.addEventListener('mouseenter', () => {
+                    if (isDesktop) {
+                        const randomPitch = 0.8 + (Math.random() * 0.6);
+                        playTingSound(randomPitch);
+                    }
+                });
+            });
+
+            // --- TOUCH TEXTURE CLASS ---
+            class TouchTexture {
+                constructor() {
+                    this.size = 64;
+                    this.width = this.height = this.size;
+                    this.maxAge = 64;
+                    this.radius = 0.25 * this.size;
+                    this.speed = 1 / this.maxAge;
+                    this.trail = [];
+                    this.last = null;
+                    this.initTexture();
+                }
+
+                initTexture() {
+                    this.canvas = document.createElement("canvas");
+                    this.canvas.width = this.width;
+                    this.canvas.height = this.height;
+                    this.ctx = this.canvas.getContext("2d");
+                    this.ctx.fillStyle = "black";
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.texture = new THREE.CanvasTexture(this.canvas);
+                }
+
+                update() {
+                    this.clear();
+                    let speed = this.speed;
+                    for (let i = this.trail.length - 1; i >= 0; i--) {
+                        const point = this.trail[i];
+                        let f = point.force * speed * (1 - point.age / this.maxAge);
+                        point.x += point.vx * f;
+                        point.y += point.vy * f;
+                        point.age++;
+                        if (point.age > this.maxAge) {
+                            this.trail.splice(i, 1);
+                        } else {
+                            this.drawPoint(point);
+                        }
+                    }
+                    this.texture.needsUpdate = true;
+                }
+
+                clear() {
+                    this.ctx.fillStyle = "black";
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                }
+
+                addTouch(point) {
+                    let force = 0;
+                    let vx = 0;
+                    let vy = 0;
+                    const last = this.last;
+                    if (last) {
+                        const dx = point.x - last.x;
+                        const dy = point.y - last.y;
+                        if (dx === 0 && dy === 0) return;
+                        const dd = dx * dx + dy * dy;
+                        let d = Math.sqrt(dd);
+                        vx = dx / d;
+                        vy = dy / d;
+                        force = Math.min(dd * 20000, 2.0);
+                    }
+                    this.last = { x: point.x, y: point.y };
+                    this.trail.push({ x: point.x, y: point.y, age: 0, force, vx, vy });
+                }
+
+                drawPoint(point) {
+                    const pos = {
+                        x: point.x * this.width,
+                        y: (1 - point.y) * this.height
+                    };
+
+                    let intensity = 1;
+                    if (point.age < this.maxAge * 0.3) {
+                        intensity = Math.sin((point.age / (this.maxAge * 0.3)) * (Math.PI / 2));
+                    } else {
+                        const t = 1 - (point.age - this.maxAge * 0.3) / (this.maxAge * 0.7);
+                        intensity = -t * (t - 2);
+                    }
+                    intensity *= point.force;
+
+                    const radius = this.radius;
+                    let color = `${((point.vx + 1) / 2) * 255}, ${((point.vy + 1) / 2) * 255}, ${intensity * 255}`;
+                    let offset = this.size * 5;
+                    this.ctx.shadowOffsetX = offset;
+                    this.ctx.shadowOffsetY = offset;
+                    this.ctx.shadowBlur = radius * 1;
+                    this.ctx.shadowColor = `rgba(${color},${0.2 * intensity})`;
+
+                    this.ctx.beginPath();
+                    this.ctx.fillStyle = "rgba(255,0,0,1)";
+                    this.ctx.arc(pos.x - offset, pos.y - offset, radius, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+            }
+            
+            const touchTexture = new TouchTexture();
+
+            // --- CANVAS PANNING & CUSTOM CURSOR LOGIC ---
+            const panCanvas = document.getElementById('pan-canvas');
+            const customCursor = document.getElementById('custom-cursor');
+            const cPluses = document.getElementById('c-pluses');
+            const cPlus2 = document.getElementById('c-plus-2');
+            const cArrow = document.getElementById('c-arrow');
+            const panViewport = document.getElementById('pan-viewport');
+            
+            let currentX = 0; let currentY = 0;
+            let targetX = 0; let targetY = 0;
+            
+            let pTargetX = 0; let pTargetY = 0;
+            let pCurrentX = 0; let pCurrentY = 0;
+            const parallaxWraps = document.querySelectorAll('.parallax-wrap');
+            
+            // Mobile scroll tracking variables
+            let mobileTargetScrollY = 0;
+            let mobileCurrentScrollY = 0;
+
+            if (panViewport) {
+                panViewport.addEventListener('scroll', () => {
+                    if (!isDesktop) {
+                        mobileTargetScrollY = panViewport.scrollTop;
+                    }
+                }, { passive: true });
+            }
+            
+            let mouseX = window.innerWidth / 2;
+            let mouseY = window.innerHeight / 2;
+            let lastMouseX = mouseX;
+            let lastMouseY = mouseY;
+            
+            const edgePadding = 100;
+            
+            let isCursorHovering = false;
+            let cursorState = 'PLUS';
+            let hoverTimeline = null;
+
+            function updateCursorState(newState) {
+                if (cursorState === newState) return;
+                
+                if (cursorState === 'STAR') {
+                    if (hoverTimeline) hoverTimeline.kill();
+                    gsap.to(cPlus2, { rotation: 0, duration: 0.3, ease: "power2.out", overwrite: "auto" });
+                    
+                    let currentRot = gsap.getProperty(cPluses, "rotation") || 0;
+                    let targetRot = Math.round(currentRot / 90) * 90;
+                    gsap.to(cPluses, { rotation: targetRot, duration: 0.3, ease: "power2.out", overwrite: "auto" });
+                    
+                    gsap.to(cursorDitherMaterial.uniforms.uHoverState, { value: 0, duration: 0.3, ease: "power2.out" });
+                }
+                
+                cursorState = newState;
+                
+                if (newState === 'STAR') {
+                    gsap.to(cPluses, { opacity: 1, duration: 0.2, overwrite: "auto" });
+                    gsap.to(cArrow, { opacity: 0, duration: 0.2, overwrite: "auto" });
+                    gsap.to(cursorDitherMaterial.uniforms.uHoverState, { value: 1, duration: 0.3, ease: "power2.out" });
+                    
+                    if (hoverTimeline) hoverTimeline.kill();
+                    hoverTimeline = gsap.timeline();
+                    hoverTimeline.to(cPlus2, { rotation: 45, duration: 0.15, ease: "back.out(2)" })
+                                 .to(cPluses, { rotation: "+=360", duration: 3, repeat: -1, ease: "linear" });
+                                 
+                } else if (newState === 'ARROW') {
+                    gsap.to(cPluses, { opacity: 0, duration: 0.2, overwrite: "auto" });
+                    gsap.to(cArrow, { opacity: 1, duration: 0.2, overwrite: "auto" });
+                    
+                } else if (newState === 'PLUS') {
+                    gsap.to(cPluses, { opacity: 1, duration: 0.2, overwrite: "auto" });
+                    gsap.to(cArrow, { opacity: 0, duration: 0.2, overwrite: "auto" });
+                }
+            }
+
+            window.addEventListener('mousemove', (e) => {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+
+                if (!isDesktop) return;
+
+                customCursor.style.transform = `translate(${mouseX - 70}px, ${mouseY - 70}px)`;
+                
+                const dx = mouseX - lastMouseX;
+                const dy = mouseY - lastMouseY;
+                
+                if (Math.abs(dx) > 1.5 || Math.abs(dy) > 1.5) {
+                    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+                    gsap.to(cArrow, { rotation: angle + "_short", duration: 0.15, ease: "power2.out", overwrite: "auto" });
+                }
+                
+                const atEdge = (mouseX < edgePadding || mouseX > window.innerWidth - edgePadding || mouseY < edgePadding || mouseY > window.innerHeight - edgePadding);
+                if (!isCursorHovering) {
+                    updateCursorState(atEdge ? 'PLUS' : 'ARROW');
+                }
+                
+                let xRatio = (mouseX - edgePadding) / (window.innerWidth - edgePadding * 2);
+                let yRatio = (mouseY - edgePadding) / (window.innerHeight - edgePadding * 2);
+                xRatio = Math.max(0, Math.min(1, xRatio));
+                yRatio = Math.max(0, Math.min(1, yRatio));
+
+                const maxScrollX = panCanvas.offsetWidth - window.innerWidth;
+                const maxScrollY = panCanvas.offsetHeight - window.innerHeight;
+
+                targetX = -maxScrollX * xRatio;
+                targetY = -maxScrollY * yRatio;
+                
+                pTargetX = (mouseX / window.innerWidth - 0.5) * 2;
+                pTargetY = (mouseY / window.innerHeight - 0.5) * 2;
+
+                touchTexture.addTouch({
+                    x: mouseX / window.innerWidth,
+                    y: 1.0 - (mouseY / window.innerHeight)
+                });
+
+                lastMouseX = mouseX;
+                lastMouseY = mouseY;
+            });
+
+            const hoverSelector = 'a, button, .clickable-menu-item, .sound-switch, .clickable-element, .artwork-item';
+
+            document.addEventListener('mouseover', (e) => {
+                if (!isDesktop) return;
+                if (e.target.closest(hoverSelector) && !isCursorHovering) {
+                    isCursorHovering = true;
+                    updateCursorState('STAR');
+                }
+            });
+
+            document.addEventListener('mouseout', (e) => {
+                if (!isDesktop) return;
+                if (e.target.closest(hoverSelector) && isCursorHovering) {
+                    if (e.relatedTarget && e.relatedTarget.closest(hoverSelector)) return;
+                    isCursorHovering = false;
+                    
+                    const atEdge = (mouseX < edgePadding || mouseX > window.innerWidth - edgePadding || mouseY < edgePadding || mouseY > window.innerHeight - edgePadding);
+                    updateCursorState(atEdge ? 'PLUS' : 'ARROW');
+                }
+            });
+
+            // --- CURSOR WEBGL SETUP ---
+            const cursorCanvas = document.getElementById('cursor-dither-canvas');
+            const cursorRenderer = new THREE.WebGLRenderer({ canvas: cursorCanvas, alpha: true, antialias: false });
+            cursorRenderer.setSize(140, 140);
+            const cursorScene = new THREE.Scene();
+            const cursorCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            
+            const cursorDitherMaterial = new THREE.ShaderMaterial({
+                vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }`,
+                fragmentShader: `
+                    uniform float uTime;
+                    uniform float uHoverState;
+                    varying vec2 vUv;
+                    
+                    float bayer2x2(vec2 a) {
+                        vec2 p = floor(mod(a, 2.0));
+                        return (p.x * 2.0 + p.y * 3.0 - p.x * p.y * 4.0) / 4.0;
+                    }
+                    float bayer4x4(vec2 a) { return bayer2x2(a) + bayer2x2(floor(a / 2.0)) / 4.0; }
+                    float bayer8x8(vec2 a) { return bayer4x4(a) + bayer2x2(floor(a / 4.0)) / 16.0; }
+
+                    void main() {
+                        vec2 center = vec2(0.5);
+                        float dist = distance(vUv, center);
+                        float baseRadius = mix(0.18, 0.40, uHoverState);
+                        float flicker = (sin(uTime * 15.0) * 0.015 + cos(uTime * 25.0) * 0.01) * (1.0 + uHoverState * 2.0);
+                        float radius = baseRadius + flicker;
+                        
+                        if(dist > radius + 0.1) discard; 
+                        
+                        float intensity = 1.0 - smoothstep(radius - 0.05, radius + 0.1, dist);
+                        float bayerVal = bayer8x8(gl_FragCoord.xy * 0.5); 
+                        float dithered = step(bayerVal, intensity);
+                        
+                        if(dithered < 0.1) discard; 
+                        gl_FragColor = vec4(0.65, 0.65, 0.65, 0.7); 
+                    }
+                `,
+                uniforms: {
+                    uTime: { value: 0 },
+                    uHoverState: { value: 0 }
+                },
+                transparent: true
+            });
+            cursorScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), cursorDitherMaterial));
+
+            // --- BACKGROUND DITHER WEBGL SETUP ---
+            const bgCanvas = document.getElementById('bg-canvas');
+            const bgScene = new THREE.Scene();
+            const bgCamera = new THREE.OrthographicCamera(-1, 1, -1, 1, 0, 1);
+            const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, alpha: false, antialias: false });
+            bgRenderer.setSize(window.innerWidth, window.innerHeight);
+            bgRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            const bgMaterial = new THREE.ShaderMaterial({
+                vertexShader: `
+                    varying vec2 vUv;
+                    void main() {
+                        vUv = uv;
+                        gl_Position = vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec2 uResolution;
+                    uniform float uTime;
+                    uniform float uScroll;
+                    uniform sampler2D uTouchTexture;
+                    varying vec2 vUv;
+
+                    float bayer2x2(vec2 a) { vec2 p = floor(mod(a, 2.0)); return (p.x * 2.0 + p.y * 3.0 - p.x * p.y * 4.0) / 4.0; }
+                    float bayer4x4(vec2 a) { return bayer2x2(a) + bayer2x2(floor(a / 2.0)) / 4.0; }
+                    float bayer8x8(vec2 a) { return bayer4x4(a) + bayer2x2(floor(a / 4.0)) / 16.0; }
+                    float bayer16x16(vec2 a) { return bayer8x8(a) + bayer2x2(floor(a / 8.0)) / 64.0; }
+
+                    vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+                    float snoise(vec2 v){
+                      const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+                      vec2 i  = floor(v + dot(v, C.yy) );
+                      vec2 x0 = v -   i + dot(i, C.xx);
+                      vec2 i1; i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                      vec4 x12 = x0.xyxy + C.xxzz; x12.xy -= i1;
+                      i = mod(i, 289.0);
+                      vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+                      vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+                      m = m*m ; m = m*m ;
+                      vec3 x = 2.0 * fract(p * C.www) - 1.0;
+                      vec3 h = abs(x) - 0.5; vec3 ox = floor(x + 0.5);
+                      vec3 a0 = x - ox;
+                      m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+                      vec3 g;
+                      g.x  = a0.x  * x0.x  + h.x  * x0.y;
+                      g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+                      return 130.0 * dot(m, g);
+                    }
+
+                    float fbm(vec2 p, float time) {
+                        float val = 0.0; float amp = 1.0; float freq = 1.0;
+                        vec2 movement = vec2(time * 0.02, time * 0.015);
+                        for (int i = 0; i < 5; i++) {
+                            val += amp * snoise((p + movement) * freq);
+                            p = p * 1.56 + vec2(17.2, 43.7);
+                            amp *= 0.09; freq *= 1.78; 
+                        }
+                        return val;
+                    }
+
+                    void main() {
+                        vec2 st = (vUv - 0.5) * vec2(uResolution.x / uResolution.y, 1.0);
+                        
+                        // --- MOBILE UV SCALING ---
+                        if (uResolution.x < 768.0) {
+                            st *= 3.0; 
+                        }
+                        
+                        vec4 touchTex = texture2D(uTouchTexture, vUv);
+                        float vx = (touchTex.r * 2.0 - 1.0);
+                        float vy = (touchTex.g * 2.0 - 1.0);
+                        float intensity = touchTex.b;
+                        vec2 smear = vec2(vx, vy) * intensity * 2.5;
+                        st -= smear;
+                        
+                        st.y += uScroll * 0.001;
+                        
+                        float noiseVal = fbm(st * 0.3, uTime * 0.15);
+                        
+                        float macroNoise = snoise(st * 0.35 + vec2(0.0, uTime * 0.09)); 
+                        
+                        float luma = noiseVal * 0.5 + 0.5;
+                        
+                        luma -= smoothstep(-0.2, 0.6, macroNoise) * 0.75;
+                        luma = clamp(luma - 0.35, 0.0, 1.0) * 0.95;
+                        
+                        float ditherSize = 3.0;
+                        vec2 gridPos = floor(gl_FragCoord.xy / ditherSize);
+                        float bayerVal = bayer16x16(gridPos);
+                        float centeredDither = bayerVal - 0.5;
+                        
+                        float colorSteps = 2.0;
+                        float ditheredLuma = luma + (centeredDither / colorSteps);
+                        ditheredLuma = clamp(floor(ditheredLuma * colorSteps + 0.5) / colorSteps, 0.0, 1.0);
+                        
+                        gl_FragColor = vec4(vec3(ditheredLuma * 0.85), 1.0);
+                    }
+                `,
+                uniforms: {
+                    uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+                    uTime: { value: 0 },
+                    uScroll: { value: 0 },
+                    uTouchTexture: { value: touchTexture.texture }
+                }
+            });
+            bgScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bgMaterial));
+
+            // --- DESKTOP ARTWORK WEBGL SETUP (Dynamic Reveal & Hover) ---
+            const artCanvas = document.getElementById('art-canvas');
+            const artRenderer = new THREE.WebGLRenderer({ canvas: artCanvas, alpha: true, antialias: false });
+            artRenderer.setSize(window.innerWidth, window.innerHeight);
+            artRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            
+            const artScene = new THREE.Scene();
+            // Orthographic camera perfectly matching the DOM pixels
+            const artCamera = new THREE.OrthographicCamera(window.innerWidth / -2, window.innerWidth / 2, window.innerHeight / 2, window.innerHeight / -2, -1000, 1000);
+            
+            const textureLoader = new THREE.TextureLoader();
+            textureLoader.crossOrigin = "anonymous";
+            
+            const desktopArtMeshes = [];
+            const artItems = document.querySelectorAll('.artwork-item');
+
+            const artShaderFragment = `
+                uniform sampler2D tDiffuse;
+                uniform float uTime;
+                uniform float uReveal;
+                uniform float uHover;
+                uniform vec2 uMouse;
+                varying vec2 vUv;
+
+                // Copy background bayer functions for consistency
+                float bayer2x2(vec2 a) { vec2 p = floor(mod(a, 2.0)); return (p.x * 2.0 + p.y * 3.0 - p.x * p.y * 4.0) / 4.0; }
+                float bayer4x4(vec2 a) { return bayer2x2(a) + bayer2x2(floor(a / 2.0)) / 4.0; }
+                float bayer8x8(vec2 a) { return bayer4x4(a) + bayer2x2(floor(a / 4.0)) / 16.0; }
+                float bayer16x16(vec2 a) { return bayer8x8(a) + bayer2x2(floor(a / 8.0)) / 64.0; }
+
+                // Noise functions
+                vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+                float snoise(vec2 v){
+                    const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+                    vec2 i  = floor(v + dot(v, C.yy) );
+                    vec2 x0 = v -   i + dot(i, C.xx);
+                    vec2 i1; i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                    vec4 x12 = x0.xyxy + C.xxzz; x12.xy -= i1;
+                    i = mod(i, 289.0);
+                    vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+                    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+                    m = m*m ; m = m*m ;
+                    vec3 x = 2.0 * fract(p * C.www) - 1.0;
+                    vec3 h = abs(x) - 0.5; vec3 ox = floor(x + 0.5);
+                    vec3 a0 = x - ox;
+                    m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+                    vec3 g;
+                    g.x  = a0.x  * x0.x  + h.x  * x0.y;
+                    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+                    return 130.0 * dot(m, g);
+                }
+
+                float fbm(vec2 p, float time) {
+                    float val = 0.0; float amp = 1.0; float freq = 1.0;
+                    vec2 movement = vec2(time * 0.02, time * 0.015);
+                    for (int i = 0; i < 4; i++) {
+                        val += amp * snoise((p + movement) * freq);
+                        p = p * 1.56 + vec2(17.2, 43.7);
+                        amp *= 0.5; freq *= 2.0; 
+                    }
+                    return val;
+                }
+
+                // --- Hash function for pixel reveal ---
+                float randomHash(vec2 p) {
+                    return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453);
+                }
+
+                void main() {
+                    vec2 uv = vUv;
+                    vec4 texColor = texture2D(tDiffuse, uv);
+
+                    // --- Dynamic Viewport Reveal (Matching Phone Blocky Grid) ---
+                    vec2 gridSize = vec2(128.0, 72.0); // Exact same grid as mobile
+                    vec2 blockPos = floor(uv * gridSize); // Integer block coordinate
+                    
+                    // Y is flipped in WebGL vs Canvas, so we flip it back to match mobile's drawing order
+                    float canvasY = gridSize.y - 1.0 - blockPos.y;
+                    
+                    // 1. Directional bias
+                    float gradient = (blockPos.x / gridSize.x) * 0.3 + (canvasY / gridSize.y) * 0.7; 
+                    
+                    // 2. Organic wave forms (Normalized to strictly 0.0 - 1.0 range!)
+                    float rawWave = fbm(vec2(blockPos.x, canvasY) * 0.06, 0.0); 
+                    float wave = clamp(rawWave * 0.5 + 0.5, 0.0, 1.0);
+                    
+                    // 3. Crunchy pixel dither
+                    float ditherPixel = randomHash(vec2(blockPos.x, canvasY));
+                    
+                    // Score is now strictly guaranteed to be between 0.0 and 1.0
+                    float revealScore = (gradient * 0.3) + (wave * 0.5) + (ditherPixel * 0.2);
+                    
+                    // Map uReveal so it sweeps safely across the entire 0.0 to 1.0 range
+                    // -0.1 to 1.1 guarantees completely hidden at 0.0, completely visible at 1.0
+                    float mappedReveal = uReveal * 1.2 - 0.1;
+                    
+                    // Discard chunks as whole blocks to mimic the mobile canvas draw
+                    if (revealScore > mappedReveal) {
+                        discard;
+                    }
+
+                    // --- Proximity Monochromatic Dither Hover ---
+                    // Correct aspect ratio for a circular hover area
+                    float aspect = 16.0 / 9.0;
+                    vec2 uvAspect = vec2(uv.x * aspect, uv.y);
+                    vec2 mouseAspect = vec2(uMouse.x * aspect, uMouse.y);
+                    
+                    float dist = distance(uvAspect, mouseAspect);
+                    
+                    // Hover intensity controlled by proximity (closer = more intense)
+                    float hoverRadius = 0.2;
+                    float hoverIntensity = smoothstep(hoverRadius, 0.0, dist) * uHover;
+
+                    // Monochromatic Luma conversion
+                    float luma = dot(texColor.rgb, vec3(0.299, 0.587, 0.114));
+                    
+                    // Generate dither grid
+                    float bayer = bayer8x8(gl_FragCoord.xy / 6.0);
+                    
+                    // Step function creates pure black and white dither
+                    float dithered = step(bayer, luma);
+                    vec3 monoDither = vec3(dithered);
+
+                    // Mix original image with monochromatic dither based on proximity
+                    vec3 finalColor = mix(texColor.rgb, monoDither, hoverIntensity);
+
+                    gl_FragColor = vec4(finalColor, 1.0);
+                }
+            `;
+
+            if (isDesktop) {
+                artItems.forEach((art, index) => {
+                    const imgEl = art.querySelector('img');
+                    const wrap = art.querySelector('.parallax-wrap');
+                    
+                    // Start unrevealed on desktop
+                    art.dataset.desktopRevealed = 'false';
+                    
+                    const tex = textureLoader.load(imgEl.src);
+                    const material = new THREE.ShaderMaterial({
+                        vertexShader: `
+                            varying vec2 vUv;
+                            void main() {
+                                vUv = uv;
+                                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                            }
+                        `,
+                        fragmentShader: artShaderFragment,
+                        uniforms: {
+                            tDiffuse: { value: tex },
+                            uTime: { value: 0 },
+                            uReveal: { value: 0.0 }, // Starts fully hidden
+                            uHover: { value: 0.0 },
+                            uMouse: { value: new THREE.Vector2(-1.0, -1.0) } // Initialize offscreen
+                        },
+                        transparent: true
+                    });
+                    
+                    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), material);
+                    artScene.add(mesh);
+                    
+                    desktopArtMeshes.push({
+                        domWrap: wrap,
+                        domArt: art,
+                        mesh: mesh
+                    });
+
+                    // Add desktop Hover interactions directly mapping to the uniform
+                    art.addEventListener('mouseenter', () => {
+                        if (isDesktop) {
+                            gsap.to(material.uniforms.uHover, { value: 1.0, duration: 0.4, ease: "power2.out" });
+                            if (isAudioUnlocked && isSoundEnabled) {
+                                artEnterSound.currentTime = 0;
+                                artEnterSound.play().catch(()=>{});
+                            }
+                        }
+                    });
+                    art.addEventListener('mouseleave', () => {
+                        if (isDesktop) {
+                            gsap.to(material.uniforms.uHover, { value: 0.0, duration: 0.5, ease: "power2.inOut" });
+                            if (isAudioUnlocked && isSoundEnabled) {
+                                artLeaveSound.currentTime = 0;
+                                artLeaveSound.play().catch(()=>{});
+                            }
+                        }
+                    });
+                    art.addEventListener('mousemove', (e) => {
+                        if (!isDesktop) return;
+                        const rect = wrap.getBoundingClientRect();
+                        // Get relative mouse coordinate mapped 0 to 1
+                        const uvX = (e.clientX - rect.left) / rect.width;
+                        const uvY = 1.0 - ((e.clientY - rect.top) / rect.height);
+                        gsap.to(material.uniforms.uMouse.value, { x: uvX, y: uvY, duration: 0.1, overwrite: "auto" });
+                    });
+                });
+            }
+
+            const overlayLines = document.getElementById('vertical-lines');
+            const vLines = [];
+            if (overlayLines) {
+                for(let i = 1; i < 50; i++) {
+                    const line = document.createElement('div');
+                    line.className = 'v-line';
+                    line.style.left = `${100 * (1 - Math.pow(0.88, i))}%`;
+                    overlayLines.appendChild(line);
+                    vLines.push(line);
+                }
+            }
+
+            const clock = new THREE.Clock();
+
+            // --- NOISE FUNCTIONS FOR ORGANIC DITHER WAVE (Mobile Canvas) ---
+            const hash = (x, y) => {
+                let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+                return n - Math.floor(n);
+            };
+            const valueNoise = (x, y) => {
+                let ix = Math.floor(x); let iy = Math.floor(y);
+                let fx = x - ix; let fy = y - iy;
+                let a = hash(ix, iy); let b = hash(ix + 1, iy);
+                let c = hash(ix, iy + 1); let d = hash(ix + 1, iy + 1);
+                let ux = fx * fx * (3.0 - 2.0 * fx);
+                let uy = fy * fy * (3.0 - 2.0 * fy);
+                return a * (1.0 - ux) + (b - a) * ux + (c - a) * uy * (1.0 - ux) + (d - c) * ux * uy;
+            };
+            const fbm = (x, y) => {
+                let v = 0.0; let a = 0.5;
+                for (let i = 0; i < 3; i++) {
+                    v += a * valueNoise(x, y);
+                    x *= 2.0; y *= 2.0; a *= 0.5;
+                }
+                return v;
+            };
+
+            // --- SETUP MOBILE PIXEL REVEAL ---
+            if (!isDesktop) {
+                artItems.forEach((art) => {
+                    const imgEl = art.querySelector('img');
+                    
+                    // Create a single canvas overlay instead of thousands of div blocks
+                    const canvas = document.createElement('canvas');
+                    canvas.className = 'pixel-reveal-canvas';
+                    art.appendChild(canvas);
+                    
+                    // Hide the container initially for the scroll reveal
+                    gsap.set(art, { autoAlpha: 0, y: 60 });
+                    gsap.set(imgEl, { opacity: 0 }); // Hide original image
+                    art.dataset.revealed = 'false';
+                });
+            }
+
+            function render() {
+                const time = clock.getElapsedTime();
+
+                // Connect mobile scroll position to WebGL noise and dynamically update skew
+                if (!isDesktop) {
+                    let rawVelocity = mobileTargetScrollY - mobileCurrentScrollY;
+                    mobileCurrentScrollY += rawVelocity * 0.15; // Smooth interpolation factor
+                    
+                    bgMaterial.uniforms.uScroll.value = mobileCurrentScrollY;
+                    
+                    // Calculate dynamic skew based on scroll velocity (Significantly tuned down)
+                    let skewAngle = rawVelocity * -0.012; 
+                    skewAngle = Math.max(-2.5, Math.min(2.5, skewAngle)); // Tightly clamped
+                    
+                    // Apply alternating inverted skew to artworks
+                    artItems.forEach((item, index) => {
+                        const direction = index % 2 === 0 ? 1 : -1;
+                        item.style.transform = `skewY(${skewAngle * direction}deg)`;
+                    });
+                    
+                    // Skew info text subtly
+                    const infoSection = document.querySelector('.info-section');
+                    if (infoSection) {
+                        infoSection.style.transform = `skewY(${skewAngle * 0.5}deg)`;
+                    }
+
+                    // --- MOBILE SCROLL REVEAL LOGIC ---
+                    artItems.forEach((art) => {
+                        if (art.dataset.revealed === 'false') {
+                            const rect = art.getBoundingClientRect();
+                            // Trigger when the top of the image enters the lower 85% of the screen
+                            const isInView = (rect.top < window.innerHeight * 0.85 && rect.bottom > 0);
+
+                            if (isInView) {
+                                art.dataset.revealed = 'true';
+                                
+                                // 1. Slide the container up
+                                gsap.to(art, { autoAlpha: 1, y: 0, duration: 0.8, ease: "power3.out" });
+                                
+                                // 2. Perform Canvas Pixel Draw for extreme performance
+                                const imgEl = art.querySelector('img');
+                                const canvas = art.querySelector('.pixel-reveal-canvas');
+                                
+                                if (canvas && imgEl) {
+                                    const startReveal = () => {
+                                        const ctx = canvas.getContext('2d');
+                                        const dpr = window.devicePixelRatio || 1;
+                                        
+                                        // Set internal resolution matching the device
+                                        canvas.width = canvas.offsetWidth * dpr;
+                                        canvas.height = canvas.offsetHeight * dpr;
+
+                                        const cols = 128; // Increased for much smaller pixels
+                                        const rows = 72;
+                                        const blockW = canvas.width / cols;
+                                        const blockH = canvas.height / rows;
+
+                                        const sWidth = imgEl.naturalWidth || 1920;
+                                        const sHeight = imgEl.naturalHeight || 1080;
+                                        const imgBlockW = sWidth / cols;
+                                        const imgBlockH = sHeight / rows;
+
+                                        const totalBlocks = cols * rows;
+                                        const blocksData = [];
+                                        
+                                        // Generate Perlin-wave dither thresholds for every pixel
+                                        for (let i = 0; i < totalBlocks; i++) {
+                                            const x = i % cols;
+                                            const y = Math.floor(i / cols);
+                                            
+                                            // 1. Directional bias (sweeps top-left to bottom-right)
+                                            const gradient = (x / cols) * 0.3 + (y / rows) * 0.7; 
+                                            // 2. Organic wave forms
+                                            const wave = fbm(x * 0.06, y * 0.06); 
+                                            // 3. Crunchy pixel dither
+                                            const dither = hash(x, y);
+                                            
+                                            // Combine to form the final reveal threshold order
+                                            const threshold = (gradient * 0.3) + (wave * 0.5) + (dither * 0.2);
+                                            
+                                            blocksData.push({ x, y, threshold });
+                                        }
+
+                                        // Sort blocks so they draw in the order of the organic wave
+                                        blocksData.sort((a, b) => a.threshold - b.threshold);
+
+                                        let blocksDrawn = 0;
+                                        const revealObj = { p: 0 };
+
+                                        // Let GSAP drive the canvas drawing smoothly
+                                        gsap.to(revealObj, {
+                                            p: totalBlocks,
+                                            duration: 1.4, // Smoothed out duration for the wave
+                                            ease: "power1.inOut", // Easing makes the start/end of the wave feel natural
+                                            delay: 0.05,
+                                            onUpdate: () => {
+                                                const target = Math.floor(revealObj.p);
+                                                while (blocksDrawn < target && blocksDrawn < totalBlocks) {
+                                                    const block = blocksData[blocksDrawn];
+                                                    const x = block.x;
+                                                    const y = block.y;
+
+                                                    // Use +1.5 on dest width/height to prevent sub-pixel visual gaps
+                                                    ctx.drawImage(
+                                                        imgEl,
+                                                        x * imgBlockW, y * imgBlockH, imgBlockW, imgBlockH,
+                                                        x * blockW, y * blockH, blockW + 1.5, blockH + 1.5
+                                                    );
+                                                    blocksDrawn++;
+                                                }
+                                            },
+                                            onComplete: () => {
+                                                // Swap back to the actual image to maintain sharpness on resize
+                                                gsap.set(imgEl, { opacity: 1 });
+                                                gsap.set(canvas, { opacity: 0 });
+                                            }
+                                        });
+                                    };
+
+                                    // Wait for image to safely draw to canvas
+                                    if (imgEl.complete) {
+                                        startReveal();
+                                    } else {
+                                        imgEl.onload = startReveal;
+                                        imgEl.onerror = startReveal; 
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+
+                if (isDesktop) {
+                    currentX += (targetX - currentX) * 0.015; 
+                    currentY += (targetY - currentY) * 0.015;
+                    panCanvas.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+                    
+                    pCurrentX += (pTargetX - pCurrentX) * 0.03;
+                    pCurrentY += (pTargetY - pCurrentY) * 0.03;
+                    
+                    parallaxWraps.forEach(wrap => {
+                        const depth = parseFloat(wrap.getAttribute('data-depth')) || 1;
+                        const moveX = -pCurrentX * (depth * 15);
+                        const moveY = -pCurrentY * (depth * 15);
+                        wrap.style.transform = `translate3d(${moveX}px, ${moveY}px, 0)`;
+                    });
+
+                    // --- DESKTOP WEBGL ARTWORK SYNC & REVEAL ---
+                    
+                    // Setup renderer for multi-viewport clipping
+                    artRenderer.setClearColor(0x000000, 0);
+                    artRenderer.clear();
+                    artRenderer.setScissorTest(true);
+
+                    // Hide all meshes initially to prevent them drawing over each other
+                    desktopArtMeshes.forEach(item => item.mesh.visible = false);
+
+                    desktopArtMeshes.forEach(item => {
+                        const artRect = item.domArt.getBoundingClientRect(); // The frame (overflow: hidden)
+                        const wrapRect = item.domWrap.getBoundingClientRect(); // The moving parallax image
+                        
+                        // Viewport culling check
+                        if (artRect.bottom < 0 || artRect.top > window.innerHeight || artRect.right < 0 || artRect.left > window.innerWidth) {
+                            return;
+                        }
+
+                        item.mesh.visible = true;
+                        
+                        // 1. Scissor clipping! This perfectly mimics the DOM's `overflow: hidden`
+                        const scissorY = window.innerHeight - artRect.bottom;
+                        artRenderer.setScissor(artRect.left, scissorY, artRect.width, artRect.height);
+                        
+                        // 2. Scale and position the mesh to exactly match the Parallax wrap
+                        item.mesh.scale.set(wrapRect.width, wrapRect.height, 1);
+                        item.mesh.position.x = wrapRect.left + wrapRect.width / 2 - window.innerWidth / 2;
+                        item.mesh.position.y = -(wrapRect.top + wrapRect.height / 2 - window.innerHeight / 2);
+
+                        // 3. Update shader uniforms
+                        item.mesh.material.uniforms.uTime.value = time;
+
+                        // 4. Trigger Reveal Animation on Viewport Intersection
+                        if (item.domArt.dataset.desktopRevealed === 'false') {
+                            item.domArt.dataset.desktopRevealed = 'true';
+                            // Animates the dynamic reveal shader parameter smoothly from 0 to 1
+                            gsap.to(item.mesh.material.uniforms.uReveal, { 
+                                value: 1.0, 
+                                duration: 1.4, // Matched phone view speed
+                                ease: "power1.inOut", // Matched phone view easing
+                                delay: 0.05
+                            });
+                        }
+                        
+                        // Render strictly this mesh inside its scissor box
+                        artRenderer.render(artScene, artCamera);
+                        item.mesh.visible = false;
+                    });
+                    
+                    // Turn off scissor test so other renders aren't affected
+                    artRenderer.setScissorTest(false);
+                    
+                    cursorDitherMaterial.uniforms.uTime.value = time;
+                    cursorRenderer.render(cursorScene, cursorCamera);
+                }
+
+                touchTexture.update();
+
+                bgMaterial.uniforms.uTime.value = time;
+                bgRenderer.render(bgScene, bgCamera);
+
+                vLines.forEach((line, i) => {
+                    const speed = 0.4 * Math.pow(0.92, i);
+                    const phase = (time * speed) + (mouseX * 0.005); 
+                    const amplitude = 12 * Math.pow(0.9, i);
+                    line.style.transform = `translateX(${Math.sin(phase) * amplitude}px)`;
+                });
+
+                requestAnimationFrame(render);
+            }
+
+            render();
+
+            window.addEventListener('resize', () => {
+                const currentIsDesktop = window.innerWidth >= 768;
+                if(isDesktop !== currentIsDesktop) {
+                    isDesktop = currentIsDesktop;
+                    location.reload(); 
+                }
+
+                bgCamera.updateProjectionMatrix();
+                bgRenderer.setSize(window.innerWidth, window.innerHeight);
+                bgMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+                
+                if (isDesktop) {
+                    artCamera.left = window.innerWidth / -2;
+                    artCamera.right = window.innerWidth / 2;
+                    artCamera.top = window.innerHeight / 2;
+                    artCamera.bottom = window.innerHeight / -2;
+                    artCamera.updateProjectionMatrix();
+                    artRenderer.setSize(window.innerWidth, window.innerHeight);
+
+                    const maxScrollX = panCanvas.offsetWidth - window.innerWidth;
+                    const maxScrollY = panCanvas.offsetHeight - window.innerHeight;
+                    let xRatio = (mouseX - edgePadding) / (window.innerWidth - edgePadding * 2);
+                    let yRatio = (mouseY - edgePadding) / (window.innerHeight - edgePadding * 2);
+                    xRatio = Math.max(0, Math.min(1, xRatio));
+                    yRatio = Math.max(0, Math.min(1, yRatio));
+                    targetX = -maxScrollX * xRatio;
+                    targetY = -maxScrollY * yRatio;
+                }
+            });
+
+            // --- TEXT SCRAMBLE & REVEAL LOGIC ---
+            function scrambleText(element) {
+                const original = element.getAttribute('data-text');
+                if (!original) return;
+                const chars = '!<>-_/[]{}—=+*^?#________';
+                let iteration = 0;
+                const maxIterations = 20; 
+                
+                const interval = setInterval(() => {
+                    element.innerText = original.split("").map((letter, index) => {
+                        if (index < iteration) return original[index];
+                        if (original[index] === " ") return " "; 
+                        return chars[Math.floor(Math.random() * chars.length)];
+                    }).join("");
+                    
+                    iteration += original.length / maxIterations;
+                    
+                    if (iteration >= original.length) {
+                        clearInterval(interval);
+                        element.innerText = original;
+                    }
+                }, 40);
+            }
+
+            function triggerTextReveal() {
+                const tl = gsap.timeline();
+                document.querySelectorAll('.info-section .delayed-reveal').forEach((el, index) => {
+                    tl.fromTo(el, 
+                        { y: '120%', autoAlpha: 0 }, 
+                        { y: '0%', autoAlpha: 1, duration: 0.8, ease: 'power3.out',
+                          onStart: () => {
+                              if (el.classList.contains('scramble-text')) scrambleText(el);
+                          }
+                        }, index * 0.15); 
+                });
+            }
+
+            // Trigger the text animation slightly after the page load transition
+            setTimeout(triggerTextReveal, 600);
+
+        });
+    </script>
+</body>
+</html>
+
+
+
