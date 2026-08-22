@@ -943,6 +943,1452 @@
                 });
 
                 if (video) {
+                    video.addEventListener('ended', () => { video.play(); });
+                    
+                    // Fail-safe: Force the button to appear after 400ms even if the video plays on a loop
+                    const playPromise = video.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            setTimeout(() => { if (!isPromptShowing) { isPromptShowing = true; triggerRevealAnimation(); } }, 400);
+                        }).catch(() => { 
+                            if (!isPromptShowing) { isPromptShowing = true; triggerRevealAnimation(); } 
+                        });
+                    } else {
+                        setTimeout(() => { if (!isPromptShowing) { isPromptShowing = true; triggerRevealAnimation(); } }, 400);
+                    }
+                }
+            }
+
+            function triggerRevealAnimation() {
+                const tl = gsap.timeline();
+                document.querySelectorAll('.delayed-reveal').forEach((el, index) => {
+                    tl.fromTo(el, { y: '120%', autoAlpha: 0 }, { y: '0%', autoAlpha: 1, duration: 0.8, ease: 'power3.out',
+                          onStart: () => { if (el.classList.contains('scramble-text')) scrambleText(el); }
+                    }, index * 0.15); 
+                });
+            }
+
+            function scrambleText(element) {
+                const original = element.getAttribute('data-text');
+                if (!original) return;
+                const chars = '!<>-_/[]{}—=+*^?#________';
+                let iteration = 0; const maxIterations = 20; 
+                const interval = setInterval(() => {
+                    element.innerText = original.split("").map((letter, index) => {
+                        if (index < iteration) return original[index];
+                        if (original[index] === " ") return " "; 
+                        return chars[Math.floor(Math.random() * chars.length)];
+                    }).join("");
+                    iteration += original.length / maxIterations;
+                    if (iteration >= original.length) { clearInterval(interval); element.innerText = original; }
+                }, 40);
+            }
+
+            function transitionToPage(url) {
+                if (!interactionsEnabled || isTransitioning) return;
+                isTransitioning = true;
+                const bottomBar = document.getElementById('main-bottom-bar');
+                if (!bottomBar) { window.location.href = url; return; }
+                const curtain = document.createElement('div');
+                curtain.className = 'transition-curtain'; curtain.style.position = 'absolute'; curtain.style.top = '100%';
+                curtain.style.left = '0'; curtain.style.width = '100vw'; curtain.style.height = '120vh'; curtain.style.backgroundColor = '#000'; curtain.style.zIndex = '-1';
+                bottomBar.appendChild(curtain);
+                gsap.to(bottomBar, { y: () => -window.innerHeight, duration: 1.2, ease: 'power3.inOut', onComplete: () => { window.location.href = url; } });
+            }
+
+            document.querySelectorAll('.clickable-menu-item').forEach((item) => {
+                item.addEventListener('mouseenter', () => {
+                    if (isDesktop) playTingSound(0.8 + (Math.random() * 0.6));
+                });
+            });
+
+            const galleryData = [
+                { src: 'img/1.jpg', name: 'Babolcsai Patrícia', title: 'Metahuman Academy', link: 'layout.html' },
+                { src: 'img/2.jpg', name: 'Dobó Ráhel', title: 'Synthetic Muse', link: 'layout.html' },
+                { src: 'img/3.jpg', name: 'Dubina Kitti', title: 'Techgno', link: 'layout.html' },
+                { src: 'img/4.jpg', name: 'Hanvai Kinga', title: 'Afterglow', link: 'layout.html' },
+                { src: 'img/5.jpg', name: 'Hoffman-né Varga Anita', title: 'AnthroTech', link: 'layout.html' },
+                { src: 'img/6.jpg', name: 'Kármán-Hajas Beatrix', title: 'Split & Merge', link: 'layout.html' },
+                { src: 'img/7.jpg', name: 'Kiss Adrienn', title: 'Somnicube', link: 'layout.html' },
+                { src: 'img/8.jpg', name: 'Kulcsár Hedvig Adrienn', title: 'Limit Value', link: 'layout.html' },
+                { src: 'img/9.jpg', name: 'Kulcsár Vivien', title: 'Synthetic Soul', link: 'layout.html' },
+                { src: 'img/10.jpg', name: 'Ördögh Vivien', title: 'Artificial Eden', link: 'layout.html' },
+                { src: 'img/11.jpg', name: 'Rétfalvi Dóra', title: 'SYNAPSE', link: 'layout.html' },
+                { src: 'img/12.jpg', name: 'Samu Edina', title: 'Think!', link: 'layout.html' },
+                { src: 'img/13.jpg', name: 'Szőke Lilla', title: 'Interface', link: 'layout.html' },
+                { src: 'img/14.jpg', name: 'Társi-Riczkó Mária', title: 'Personalab', link: 'layout.html' },
+                { src: 'img/15.jpg', name: 'Tulkovics Mercédesz Laura', title: 'T.SyncCore', link: 'layout.html' },
+                { src: 'img/16.jpg', name: 'Weszely Regina Mária', title: 'Liminal Code', link: 'layout.html' }
+            ];
+
+            const linesCanvas = document.getElementById('vertical-lines-canvas');
+            const linesCtx = linesCanvas.getContext('2d', { alpha: true });
+            
+            function resizeLinesCanvas() {
+                const rect = linesCanvas.parentElement.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                linesCanvas.width = rect.width * dpr;
+                linesCanvas.height = rect.height * dpr;
+                linesCtx.scale(dpr, dpr);
+                linesCanvas.style.width = `${rect.width}px`;
+                linesCanvas.style.height = `${rect.height}px`;
+            }
+
+            const bgCanvas = document.getElementById('bg-canvas');
+            const bgScene = new THREE.Scene();
+            const bgCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+            const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, alpha: false, antialias: false });
+            
+            const optimalPixelRatio = Math.min(window.devicePixelRatio, 1.25);
+            bgRenderer.setSize(innerWidth, innerHeight);
+            bgRenderer.setPixelRatio(optimalPixelRatio);
+
+            const bgFragmentShader = `
+                precision mediump float;
+                uniform vec2 uResolution;
+                uniform float uTime;
+                uniform float uScroll;
+                varying vec2 vUv;
+
+                float bayer2x2(vec2 a) {
+                    vec2 p = floor(mod(a, 2.0));
+                    return (p.x * 2.0 + p.y * 3.0 - p.x * p.y * 4.0) / 4.0;
+                }
+                float bayer4x4(vec2 a) { return bayer2x2(a) + bayer2x2(floor(a / 2.0)) / 4.0; }
+                float bayer8x8(vec2 a) { return bayer4x4(a) + bayer2x2(floor(a / 4.0)) / 16.0; }
+                float bayer16x16(vec2 a) { return bayer8x8(a) + bayer2x2(floor(a / 8.0)) / 64.0; }
+
+                vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
+                float snoise(vec2 v){
+                  const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+                  vec2 i  = floor(v + dot(v, C.yy) );
+                  vec2 x0 = v -   i + dot(i, C.xx);
+                  vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+                  vec4 x12 = x0.xyxy + C.xxzz; x12.xy -= i1;
+                  i = mod(i, 289.0);
+                  vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
+                  vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
+                  m = m*m ; m = m*m ;
+                  vec3 x = 2.0 * fract(p * C.www) - 1.0;
+                  vec3 h = abs(x) - 0.5; vec3 ox = floor(x + 0.5);
+                  vec3 a0 = x - ox;
+                  m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
+                  vec3 g;
+                  g.x  = a0.x  * x0.x  + h.x  * x0.y;
+                  g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+                  return 130.0 * dot(m, g);
+                }
+
+                float fbm(vec2 p, float time) {
+                    float val = 0.0;
+                    float amp = 1.0;
+                    float freq = 1.0;
+                    vec2 movement = vec2(time * 0.05, time * 0.03);
+                    
+                    for (int i = 0; i < 3; i++) {
+                        val += amp * snoise((p + movement) * freq);
+                        p = p * 1.56 + vec2(17.2, 43.7);
+                        amp *= 0.15; 
+                        freq *= 1.78; 
+                    }
+                    return val;
+                }
+
+                void main() {
+                    vec2 st = (gl_FragCoord.xy - 0.5 * uResolution.xy) / uResolution.y;
+                    st.y += uScroll * 0.00015;
+                    float noiseVal = fbm(st * 0.3, uTime * 0.15);
+                    float luma = noiseVal * 0.5 + 0.5;
+                    luma = clamp(luma - 0.55, 0.0, 1.0) * 0.9;
+                    
+                    float ditherSize = 3.0;
+                    vec2 gridPos = floor(gl_FragCoord.xy / ditherSize);
+                    float bayerVal = bayer16x16(gridPos);
+                    float centeredDither = bayerVal - 0.5;
+                    
+                    float levels = 3.0;
+                    float colorSteps = levels - 1.0;
+                    
+                    float ditheredLuma = luma + (centeredDither / colorSteps);
+                    ditheredLuma = clamp(floor(ditheredLuma * colorSteps + 0.5) / colorSteps, 0.0, 1.0);
+                    
+                    vec3 finalColor = vec3(ditheredLuma * 0.85); 
+                    gl_FragColor = vec4(finalColor, 1.0);
+                }
+            `;
+
+            const bgMaterial = new THREE.ShaderMaterial({
+                vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 1.0); }`,
+                fragmentShader: bgFragmentShader,
+                uniforms: {
+                    uResolution: { value: new THREE.Vector2(innerWidth, innerHeight) },
+                    uTime: { value: 0 },
+                    uScroll: { value: 0 }
+                }
+            });
+            bgScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bgMaterial));
+
+            // OPTIMIZATION: Completely purged the foreground WebGL renderer/scene logic!
+
+            const DOMItems = [];
+            const itemStates = []; 
+            const gallery = document.getElementById('gallery');
+
+            const tooltip = document.getElementById('cursor-tooltip');
+            const tooltipMask = document.getElementById('tt-mask');
+            const tooltipTitle = document.getElementById('tt-title');
+            const tooltipCategory = document.getElementById('tt-category');
+            const tooltipArrow = document.getElementById('tt-arrow');
+            const tooltipArrowBox = document.querySelector('.tt-arrow-box');
+
+            let mouseX = -1000;
+            let mouseY = -1000;
+            let xTo = gsap.quickTo(tooltip, "x", {duration: 0.15, ease: "power2.out"});
+            let yTo = gsap.quickTo(tooltip, "y", {duration: 0.15, ease: "power2.out"});
+
+            window.addEventListener("mousemove", (e) => {
+                if (!isDesktop) return; 
+                mouseX = e.clientX; mouseY = e.clientY;
+                let targetX = mouseX + 15; let targetY = mouseY + 15;
+                const tWidth = tooltip.offsetWidth; const tHeight = tooltip.offsetHeight;
+                if (targetX + tWidth > window.innerWidth - 10) targetX = mouseX - tWidth - 15;
+                if (targetY + tHeight > window.innerHeight - 10) targetY = mouseY - tHeight - 15;
+                xTo(targetX); yTo(targetY);
+            });
+
+            tooltipArrowBox.addEventListener('click', () => {
+                if (currentHoveredIndex !== -1 && interactionsEnabled && !isTransitioning) {
+                    transitionToPage(galleryData[currentHoveredIndex].link);
+                }
+            });
+
+            galleryData.forEach((data, index) => {
+                const a = document.createElement('a');
+                a.className = 'gallery-item';
+                a.href = data.link;
+                a.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (interactionsEnabled && isDesktop) transitionToPage(data.link);
+                }); 
+
+                // Create base image
+                const baseImg = document.createElement('img');
+                baseImg.className = 'gi-base';
+                baseImg.src = data.src;
+                baseImg.draggable = false;
+                a.appendChild(baseImg);
+
+                // Create CSS filter dither wrapper
+                const ditherWrap = document.createElement('div');
+                ditherWrap.className = 'gi-dither-wrapper';
+                const ditherImg = document.createElement('img');
+                ditherImg.className = 'gi-dither';
+                ditherImg.src = data.src;
+                ditherImg.draggable = false;
+                
+                ditherWrap.appendChild(ditherImg);
+                a.appendChild(ditherWrap);
+
+                gallery.appendChild(a);
+                DOMItems.push(a);
+                
+                // Track state heavily to avoid DOM layout thrashing
+                itemStates.push({ wasVisible: null, lastW: 0, lastH: 0, lastTransform: '', lastZ: 0, lastOpacity: '', lastMx: 50, lastMy: 50 });
+                
+                // Preload image for loading sequence
+                const imgPreload = new Image();
+                imgPreload.src = data.src;
+            });
+            
+            let currentHoveredIndex = -1;
+
+            window.addEventListener('click', (e) => {
+                if (!interactionsEnabled || isTransitioning) return;
+                if (e.target.closest('.ui-layer, .proceed-btn, #loading-overlay, .tt-arrow-box')) return;
+                if (!isDesktop) return;
+                if (currentHoveredIndex !== -1) {
+                    e.preventDefault();
+                    transitionToPage(galleryData[currentHoveredIndex].link);
+                }
+            });
+
+            function triggerEnter(index) {
+                const data = galleryData[index];
+                
+                tooltipTitle.textContent = data.name;
+                tooltipCategory.textContent = data.title;
+                
+                gsap.killTweensOf(tooltip, "opacity,visibility,autoAlpha");
+                gsap.killTweensOf([tooltipMask, tooltipTitle, tooltipCategory, tooltipArrow]);
+
+                gsap.set([tooltipTitle, tooltipCategory], { x: -30, opacity: 0 });
+                gsap.set(tooltipArrow, { x: -20, opacity: 0 });
+                gsap.set(tooltip, { autoAlpha: 1 });
+                gsap.fromTo(tooltipMask, { clipPath: 'inset(0% 100% 0% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.5, ease: 'power3.out' });
+                gsap.to([tooltipTitle, tooltipCategory], { x: 0, opacity: 1, duration: 0.5, stagger: 0.1, delay: 0.1, ease: 'power3.out' });
+                gsap.to(tooltipArrow, { x: 0, opacity: 1, duration: 0.5, delay: 0.25, ease: 'power3.out' });
+            }
+
+            function triggerLeave(index) {
+                gsap.killTweensOf(tooltip, "opacity,visibility,autoAlpha");
+                gsap.killTweensOf([tooltipMask, tooltipTitle, tooltipCategory, tooltipArrow]);
+
+                gsap.to(tooltipMask, { 
+                    clipPath: 'inset(0% 100% 0% 0%)', duration: 0.4, ease: 'power3.inOut',
+                    onComplete: () => gsap.set(tooltip, { autoAlpha: 0 })
+                });
+                gsap.to([tooltipTitle, tooltipCategory, tooltipArrow], { x: 20, opacity: 0, duration: 0.3, stagger: 0.05, ease: 'power2.in' });
+            }
+
+            function getInterpolatedState(t) {
+                let x, y, wPx, hPx, o;
+                if (isDesktop) {
+                    const wave = Math.sin((t - 0.05) * Math.PI * 2);
+                    const stretch = Math.abs(wave);
+                    x = -0.1 + (t * 1.0); 
+                    const baseW = window.innerWidth * 0.18;
+                    const baseH = window.innerHeight * 0.32;
+                    wPx = baseW * (1 + stretch * 0.85);
+                    hPx = baseH * (1 - stretch * 0.15);
+                    const bottomBarPx = Math.max(100, Math.min(window.innerHeight * 0.14, 160));
+                    const bottomBarTopRatio = (window.innerHeight - bottomBarPx) / window.innerHeight;
+                    const maxImageHalfHeightRatio = (baseH * 0.85 / 2) / window.innerHeight;
+                    const maxY = bottomBarTopRatio - maxImageHalfHeightRatio;
+                    const minY = maxImageHalfHeightRatio + 0.01; 
+                    const centerY = (maxY + minY) / 2;
+                    const amplitude = (maxY - minY) / 2;
+                    y = centerY + (wave * amplitude);
+                    if (t < 0.05) o = t / 0.05; 
+                    else if (t > 1.10 && t < 1.30) o = (1.30 - t) / 0.2; 
+                    else if (t >= 1.30) o = 0; else o = 1;
+                } else {
+                    y = -0.15 + (t * 2.2); 
+                    const wave = Math.sin((t - 0.02) * Math.PI * 4);
+                    const stretch = Math.abs(wave);
+                    x = 0.5 + (wave * 0.25);
+                    const baseW = window.innerWidth * 0.55;
+                    const baseH = window.innerHeight * 0.22;
+                    wPx = baseW * (1 - stretch * 0.15);
+                    hPx = baseH * (1 + stretch * 0.40);
+                    if (t < 0.05) o = t / 0.05; 
+                    else if (t > 0.45 && t < 0.55) o = (0.55 - t) / 0.10; 
+                    else if (t >= 0.55) o = 0; else o = 1;
+                }
+                const z = Math.round((2 - t) * 1000);
+                return { x, y, wPx, hPx, z, o };
+            }
+
+            let targetScroll = 10000; 
+            let currentScroll = targetScroll;
+            let userScrollDistance = 0; 
+            let lastUserTickThreshold = 0;
+
+            function checkUserTick() {
+                const currentThreshold = Math.floor(userScrollDistance / 60);
+                if (currentThreshold !== lastUserTickThreshold) {
+                    playTickSound(); lastUserTickThreshold = currentThreshold;
+                }
+            }
+            
+            window.addEventListener('wheel', (e) => { 
+                const delta = e.deltaY * 0.35; targetScroll += delta; userScrollDistance += Math.abs(delta); checkUserTick();
+            });
+            
+            let touchStartY = 0;
+            window.addEventListener('touchstart', (e) => { touchStartY = e.touches[0].clientY; }, { passive: true });
+            window.addEventListener('touchmove', (e) => {
+                const touchY = e.touches[0].clientY; const delta = (touchStartY - touchY) * 1.0;
+                targetScroll += delta; userScrollDistance += Math.abs(delta); checkUserTick(); touchStartY = touchY;
+            }, { passive: true });
+
+            const clock = new THREE.Clock();
+            resizeLinesCanvas();
+
+            function render() {
+                const time = clock.getElapsedTime();
+                targetScroll += 0.8; 
+                let scrollVelocity = (targetScroll - currentScroll) * 0.06;
+                currentScroll += scrollVelocity;
+                
+                // 1. BG RENDER
+                bgMaterial.uniforms.uTime.value = time;
+                bgMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+                bgMaterial.uniforms.uScroll.value = currentScroll;
+                bgRenderer.render(bgScene, bgCamera);
+
+                // 2. CURSOR SPIN SYNC
+                if (isDesktop) {
+                    const cursorSpinWrapper = document.getElementById('cursor-spin-wrapper');
+                    if (cursorSpinWrapper) cursorSpinWrapper.style.transform = `rotate(${currentScroll * 0.3}deg)`;
+                }
+
+                // 3. LINES CANVAS 2D UPDATE
+                linesCtx.clearRect(0, 0, linesCanvas.width, linesCanvas.height);
+                linesCtx.fillStyle = '#fff';
+                const cw = linesCanvas.clientWidth;
+                const ch = linesCanvas.clientHeight;
+                for(let i = 1; i < 50; i++) {
+                    const speed = 0.4 * Math.pow(0.92, i);
+                    const phase = (time * speed) + (currentScroll * 0.01);
+                    const amplitude = 12 * Math.pow(0.9, i);
+                    const xOffset = Math.sin(phase) * amplitude;
+                    const baseLeft = cw * (1 - Math.pow(0.88, i));
+                    linesCtx.fillRect(baseLeft + xOffset, 0, 1.5, ch);
+                }
+
+                // 4. GALLERY CALCULATION
+                const globalOffset = currentScroll / 4000;
+                let topHoverIndex = -1;
+                let maxZ = -Infinity;
+                let minDist = Infinity; 
+                const calculatedStates = [];
+                
+                DOMItems.forEach((item, index) => {
+                    let t = (globalOffset + (index / galleryData.length) * 2.0) % 2.0;
+                    if (t < 0) t = (t % 2.0) + 2.0; 
+
+                    const state = getInterpolatedState(t);
+                    const xPx = state.x * window.innerWidth;
+                    const yPx = state.y * window.innerHeight;
+                    const finalW = state.wPx;
+                    const finalH = state.hPx;
+                    
+                    calculatedStates.push({ xPx, yPx, finalW, finalH, baseZ: state.z, o: state.o });
+
+                    if (interactionsEnabled && state.o > 0.1) {
+                        const left = xPx - finalW / 2; const right = xPx + finalW / 2;
+                        const top = yPx - finalH / 2; const bottom = yPx + finalH / 2;
+                        if (isDesktop) {
+                            if (mouseX >= left && mouseX <= right && mouseY >= top && mouseY <= bottom) {
+                                if (state.z > maxZ) { maxZ = state.z; topHoverIndex = index; }
+                            }
+                        } else {
+                            const screenCenterX = window.innerWidth / 2;
+                            const screenCenterY = (window.innerHeight - 90) / 2; 
+                            const dist = Math.hypot(xPx - screenCenterX, yPx - screenCenterY);
+                            if (dist < minDist && dist < 180) { minDist = dist; topHoverIndex = index; }
+                        }
+                    }
+                });
+                
+                if (topHoverIndex !== currentHoveredIndex) {
+                    if (currentHoveredIndex !== -1) triggerLeave(currentHoveredIndex);
+                    if (topHoverIndex !== -1) triggerEnter(topHoverIndex);
+                    currentHoveredIndex = topHoverIndex;
+                }
+
+                DOMItems.forEach((item, index) => {
+                    const cState = calculatedStates[index];
+                    const iState = itemStates[index];
+                    const isHovered = (index === currentHoveredIndex);
+                    
+                    const isVisible = cState.o > 0.005;
+                    
+                    // OPTIMIZATION: Only talk to the DOM if absolutely necessary
+                    if (!isVisible) {
+                        if (iState.wasVisible !== false) {
+                            item.style.opacity = '0';
+                            item.style.pointerEvents = 'none';
+                            iState.wasVisible = false;
+                        }
+                        return; // Skip math for invisible items!
+                    }
+
+                    if (iState.wasVisible !== true) {
+                        item.style.pointerEvents = 'auto';
+                        iState.wasVisible = true;
+                    }
+
+                    const finalZ = cState.baseZ + (isHovered ? 5000 : 0);
+                    const targetW = Math.round(cState.finalW);
+                    const targetH = Math.round(cState.finalH);
+                    
+                    // Origin is now top-left, so we offset the translation by half the width/height
+                    const targetX = Math.round(cState.xPx - targetW / 2);
+                    const targetY = Math.round(cState.yPx - targetH / 2);
+
+                    // DOM State Cache updates
+                    if (iState.lastW !== targetW || iState.lastH !== targetH) {
+                        item.style.width = `${targetW}px`;
+                        item.style.height = `${targetH}px`;
+                        iState.lastW = targetW; iState.lastH = targetH;
+                    }
+
+                    const transformStr = `translate3d(${targetX}px, ${targetY}px, 0)`;
+                    if (iState.lastTransform !== transformStr) {
+                        item.style.transform = transformStr;
+                        iState.lastTransform = transformStr;
+                    }
+                    
+                    if (iState.lastZ !== finalZ) {
+                        item.style.zIndex = finalZ;
+                        iState.lastZ = finalZ;
+                    }
+
+                    const targetOpacity = cState.o.toFixed(2);
+                    if (iState.lastOpacity !== targetOpacity) {
+                        item.style.opacity = targetOpacity;
+                        iState.lastOpacity = targetOpacity;
+                    }
+
+                    // Pure CSS Hover Effect Sync
+                    if (isHovered) {
+                        item.classList.add('is-hovered');
+                        const effectX = isDesktop ? mouseX : cState.xPx; 
+                        const effectY = isDesktop ? mouseY : cState.yPx;
+                        
+                        // Calculate percentage coordinate for radial-gradient mask
+                        const uvX = ((effectX - targetX) / targetW) * 100;
+                        const uvY = ((effectY - targetY) / targetH) * 100;
+                        
+                        if (iState.lastMx !== uvX || iState.lastMy !== uvY) {
+                            item.style.setProperty('--mx', `${uvX.toFixed(1)}%`);
+                            item.style.setProperty('--my', `${uvY.toFixed(1)}%`);
+                            iState.lastMx = uvX; iState.lastMy = uvY;
+                        }
+                    } else {
+                        item.classList.remove('is-hovered');
+                    }
+                });
+
+                if (!isDesktop && currentHoveredIndex !== -1) {
+                    const tWidth = tooltip.offsetWidth || 300; const tHeight = tooltip.offsetHeight || 60;
+                    xTo(window.innerWidth / 2 - tWidth / 2); yTo(window.innerHeight - 90 - tHeight - 20); 
+                }
+
+                requestAnimationFrame(render);
+            }
+
+            render();
+
+            window.addEventListener('resize', () => {
+                resizeLinesCanvas();
+                bgCamera.updateProjectionMatrix();
+                bgRenderer.setSize(window.innerWidth, window.innerHeight);
+                bgMaterial.uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+
+                const currentIsDesktop = window.innerWidth >= 768;
+                if(isDesktop !== currentIsDesktop) {
+                    isDesktop = currentIsDesktop; location.reload(); 
+                }
+            });
+
+        });
+    </script>
+</body>
+</html>
+
+
+
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 140px; 
+            height: 140px;
+            pointer-events: none;
+            z-index: 9999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            mix-blend-mode: difference;
+            will-change: transform;
+        }
+
+        #cursor-bg-gif {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        #cursor-spin-wrapper {
+            position: relative;
+            width: 18px;
+            height: 18px;
+            z-index: 2;
+            will-change: transform;
+        }
+
+        .cursor-icon {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .c-plus {
+            position: absolute;
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            transform-origin: center;
+            will-change: transform;
+        }
+
+        .c-line {
+            position: absolute;
+            background-color: #fff;
+        }
+
+        .c-horizontal { width: 100%; height: 1.5px; top: 50%; left: 0; transform: translateY(-50%); }
+        .c-vertical { width: 1.5px; height: 100%; top: 0; left: 50%; transform: translateX(-50%); }
+
+        /* --- LOADING SCREEN STYLES --- */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 99999;
+            will-change: transform;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .loading-black-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+        }
+
+        .loading-black-bg video {
+            width: clamp(120px, 20vw, 240px);
+            height: auto;
+            object-fit: contain;
+            pointer-events: none;
+        }
+
+        .loading-prompt-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+            opacity: 1; 
+            text-align: center;
+        }
+
+        .transition-curtain {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            width: 100vw;
+            height: 120vh;
+            background: #000;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .text-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .text-mask {
+            overflow: hidden;
+            display: block;
+        }
+
+        .delayed-reveal {
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(120%);
+            will-change: transform, opacity;
+        }
+
+        .loading-text {
+            font-size: clamp(0.75rem, 1.5vw, 1rem);
+            font-weight: 400;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            max-width: 90vw;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.5;
+            white-space: nowrap; 
+        }
+
+        .proceed-btn {
+            background: transparent;
+            color: #fff;
+            border: 1px solid #fff;
+            padding: 12px 40px;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            background-color: transparent;
+            text-transform: uppercase;
+            transition: background-color 0.3s, color 0.3s;
+            pointer-events: auto;
+        }
+
+        .proceed-btn:hover {
+            background-color: #fff;
+            color: #000;
+        }
+
+        /* WebGL Background Canvas */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 0;
+            opacity: 0.6; 
+        }
+
+        /* WebGL Image Effects Canvas */
+        #webgl-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 5; 
+        }
+
+        /* Fixed UI Overlay */
+        .ui-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 10000;
+        }
+
+        .logo-container {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 1rem;
+            pointer-events: auto;
+        }
+
+        .logo-img {
+            height: 36px;
+            width: auto;
+            display: block;
+        }
+
+        .top-right-logo-container {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            align-items: flex-start;
+            pointer-events: auto;
+        }
+
+        .bkszc-logo-img {
+            height: 52px;
+            width: auto;
+            display: block;
+        }
+
+        /* --- SOUND TOGGLE SWITCH --- */
+        .sound-switch {
+            position: relative; 
+            border: 1px solid #fff;
+            background: transparent;
+            color: #fff;
+            height: 22px; 
+            width: 90px;
+            pointer-events: auto;
+            font-family: inherit;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .switch-block {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 22px; 
+            background-color: #fff;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+            z-index: 2;
+        }
+
+        .switch-block::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: -1px; 
+            width: 1px;
+            background-color: #fff;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .switch-text-container {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            align-items: center;
+            z-index: 1;
+        }
+
+        .text-on, .text-off {
+            position: absolute;
+            font-size: 0.6rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            width: 66px; 
+            text-align: center;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            line-height: 20px;
+        }
+
+        .text-on { left: 22px; transform: translateX(0); }
+        .text-off { left: 0; transform: translateX(-68px); }
+
+        .sound-switch.is-off .switch-block {
+            transform: translateX(66px); 
+            background-color: transparent;
+        }
+        .sound-switch.is-off .switch-block::after { transform: translateX(-22px); }
+        .sound-switch.is-off .text-on { transform: translateX(68px); }
+        .sound-switch.is-off .text-off { transform: translateX(0); }
+
+        /* Bottom Bar UI */
+        .bottom-bar {
+            width: 100vw;
+            height: clamp(100px, 14vh, 160px);
+            display: flex;
+            border-top: 1.5px solid #fff;
+            background-color: #000;
+            pointer-events: auto;
+        }
+
+        .bottom-bar.is-loading { position: absolute; bottom: 100%; left: 0; }
+        .bottom-bar.is-fixed { position: fixed; bottom: 0; left: 0; z-index: 10000; }
+
+        .bottom-giant-text {
+            flex: 0 0 auto;
+            display: flex;
+            border-right: 1.5px solid #fff;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .bottom-logo-picture { height: 100%; display: block; }
+
+        .bottom-logo-img {
+            height: 100%;
+            width: auto;
+            max-width: none;
+            object-fit: contain;
+            display: block;
+        }
+
+        .bottom-menu {
+            flex: 1;
+            min-width: 140px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1.5px solid #fff;
+        }
+
+        .menu-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+            border-bottom: 1.5px solid #fff;
+            font-size: clamp(0.75rem, 1vw, 1.2rem);
+            font-weight: 400;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
+        .menu-item:last-child { border-bottom: none; }
+
+        /* --- CLICKABLE MENU ITEM HOVER INVERT --- */
+        .clickable-menu-item {
+            cursor: none; 
+            text-decoration: none; 
+            color: inherit;
+            background-color: #000; 
+            isolation: isolate; 
+        }
+
+        .clickable-menu-item::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #fff;
+            mix-blend-mode: difference;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none; 
+            z-index: 20; 
+        }
+
+        .clickable-menu-item:hover::after { opacity: 1; }
+
+        /* --- INFINITE SCROLLING MARQUEE --- */
+        .menu-item.marquee-container {
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: stretch;
+        }
+
+        .marquee-track {
+            display: flex;
+            align-items: stretch; 
+            height: 100%;
+            width: max-content;
+            animation: scrollMarquee 30s linear infinite;
+            will-change: transform;
+        }
+
+        .marquee-item {
+            height: 100%; 
+            margin-right: 0.75rem; 
+            width: auto;
+            max-width: none;
+            flex-shrink: 0;
+            display: block;
+        }
+
+        @keyframes scrollMarquee {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-50%, 0, 0); } 
+        }
+
+        .static-track {
+            display: flex;
+            align-items: stretch;
+            height: 100%;
+            width: max-content;
+        }
+
+        .static-item {
+            height: 100%;
+            margin-right: 0.75rem;
+            width: auto;
+            flex-shrink: 0;
+            display: block;
+        }
+
+        .menu-item.jelentkezz-item { border-bottom: none; }
+        .menu-item.jelentkezz-item .marquee-track { animation: scrollMarqueeReverse 60s linear infinite; }
+
+        @keyframes scrollMarqueeReverse {
+            0% { transform: translate3d(-50%, 0, 0); }
+            100% { transform: translate3d(0, 0, 0); }
+        }
+
+        .bottom-lines {
+            width: 25vw;
+            min-width: 120px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden; 
+        }
+
+        .lines-row {
+            flex: 1;
+            border-bottom: 1.5px solid #fff;
+            width: 100%;
+        }
+
+        .lines-row:last-child { border-bottom: none; }
+
+        /* Canvas for 2D lines */
+        .vertical-lines-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+        }
+
+        /* DOM Shadow Caster */
+        #gallery {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 1; 
+        }
+
+        .gallery-item {
+            position: absolute;
+            top: 0; left: 0;
+            
+            /* OPTIMIZATION: contain strict isolates this element. 
+               This allows us to animate width/height without triggering full page layout recalculations! */
+            contain: strict;
+            
+            transform-origin: top left;
+            will-change: transform, opacity, width, height;
+            background-color: rgba(0, 0, 0, 1); 
+            box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.4);
+            transition: box-shadow 0.3s ease;
+        }
+
+        .gallery-item .gi-base {
+            width: 100%; height: 100%; object-fit: cover; display: block;
+        }
+
+        /* --- CSS HARDWARE-ACCELERATED HOVER MASK --- */
+        .gallery-item .gi-dither-wrapper {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; transition: opacity 0.3s ease;
+            -webkit-mask-image: radial-gradient(circle 250px at var(--mx, 50%) var(--my, 50%), black 10%, transparent 80%);
+            mask-image: radial-gradient(circle 250px at var(--mx, 50%) var(--my, 50%), black 10%, transparent 80%);
+            pointer-events: none; overflow: hidden;
+        }
+        
+        .gallery-item.is-hovered .gi-dither-wrapper {
+            opacity: 1;
+        }
+
+        .gallery-item .gi-dither {
+            width: 100%; height: 100%; object-fit: cover;
+            filter: grayscale(100%) contrast(150%) brightness(1.2);
+        }
+
+        /* Inline SVG Noise overlay for exact dither match */
+        .gallery-item .gi-dither-wrapper::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="1" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.6"/></svg>');
+            mix-blend-mode: hard-light; pointer-events: none;
+        }
+
+        .gallery-item:hover { box-shadow: 0px 15px 30px rgba(0, 0, 0, 0.6); }
+
+        /* --- FLOATING CURSOR TOOLTIP --- */
+        .floating-tooltip {
+            position: fixed;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 99999;
+            opacity: 0;
+            visibility: hidden;
+            will-change: transform;
+        }
+
+        .tooltip-mask {
+            background-color: #fff;
+            color: #000;
+            display: flex;
+            flex-direction: column;
+            width: max-content;
+            max-width: 360px;
+            clip-path: inset(0% 100% 0% 0%); 
+            will-change: clip-path;
+        }
+
+        .tt-top-row { padding: 16px 20px 8px 20px; }
+        .tt-bottom-row { display: flex; align-items: stretch; justify-content: space-between; }
+        .tt-category-wrap { padding: 0 24px 16px 20px; display: flex; align-items: center; flex: 1; }
+        .tt-text-mask { overflow: hidden; }
+
+        .tt-title {
+            font-size: 20px; font-weight: 400; text-transform: uppercase;
+            letter-spacing: 0.5px; line-height: 1.2; white-space: normal; 
+            word-wrap: break-word; will-change: transform, opacity;
+        }
+
+        .tt-category {
+            font-size: 20px; font-weight: 400; line-height: 1;
+            white-space: nowrap; will-change: transform, opacity;
+        }
+
+        .tt-arrow-box {
+            background-color: #000; padding: 0 28px; display: flex;
+            align-items: center; justify-content: center; overflow: hidden;
+            flex-shrink: 0; pointer-events: auto; cursor: pointer;
+            box-shadow: inset 0 0 0 0px #000;
+            transition: background-color 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .tt-arrow-box:active { background-color: #fff; box-shadow: inset 0 0 0 2px #000; }
+
+        .tt-arrow {
+            position: relative; width: 80px; height: 1px; background-color: #fff;
+            will-change: transform, opacity; transition: background-color 0.1s ease;
+        }
+        
+        .tt-arrow-box:active .tt-arrow { background-color: #000; }
+
+        .tt-arrow::after {
+            content: ''; position: absolute; right: 0; top: 50%;
+            width: 10px; height: 10px; border-top: 1px solid #fff; border-right: 1px solid #fff;
+            transform: translateY(-50%) rotate(45deg); transition: border-color 0.1s ease;
+        }
+
+        .tt-arrow-box:active .tt-arrow::after { border-top-color: #000; border-right-color: #000; }
+
+        @media (max-width: 768px) {
+            #custom-cursor { display: none !important; }
+            .bottom-bar { height: 90px; }
+            .bottom-giant-text { padding: 0; }
+            .bottom-menu { width: 35vw; min-width: 140px; }
+            .menu-item { font-size: 0.7rem; padding: 0 0.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Custom Cursor Overlay -->
+    <div id="custom-cursor">
+        <img src="hover.gif" id="cursor-bg-gif" alt="">
+        <div id="cursor-spin-wrapper">
+            <div class="cursor-icon" id="cursor-icon">
+                <div class="c-plus" id="c-plus-1">
+                    <div class="c-line c-horizontal"></div>
+                    <div class="c-line c-vertical"></div>
+                </div>
+                <div class="c-plus" id="c-plus-2">
+                    <div class="c-line c-horizontal"></div>
+                    <div class="c-line c-vertical"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="bottom-bar is-loading" id="main-bottom-bar">
+            <div class="bottom-giant-text">
+                <picture class="bottom-logo-picture">
+                    <source media="(max-width: 768px)" srcset="grafikaesti_phone.svg">
+                    <img src="grafikaesti.svg" alt="Grafika Esti" class="bottom-logo-img" onerror="this.src='https://placehold.co/400x100/000/fff?text=GRAFIKA+ESTI'">
+                </picture>
+            </div>
+            <div class="bottom-menu">
+                <a href="#" class="menu-item marquee-container clickable-menu-item">
+                    <div class="marquee-track">
+                        <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                        <img src="2026.svg" alt="2026" class="marquee-item" onerror="this.style.display='none'">
+                    </div>
+                </a>
+                <a href="#" class="menu-item marquee-container clickable-menu-item">
+                    <div class="static-track">
+                        <img src="aziskolarol.gif" alt="Az iskoláról" class="static-item" onerror="this.style.display='none'">
+                    </div>
+                </a>
+                <a href="#" class="menu-item marquee-container jelentkezz-item clickable-menu-item">
+                    <div class="marquee-track">
+                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                        <img src="jelentkezz.svg" alt="Jelentkezz" class="marquee-item" onerror="this.style.display='none'">
+                    </div>
+                </a>
+            </div>
+            <div class="bottom-lines">
+                <div class="lines-row"></div>
+                <div class="lines-row"></div>
+                <div class="lines-row"></div>
+                <canvas class="vertical-lines-overlay" id="vertical-lines-canvas"></canvas>
+            </div>
+        </div>
+        <div class="loading-black-bg">
+            <div class="loading-prompt-content" id="loading-prompt-content">
+                <div class="text-group">
+                    <div class="text-mask"><div class="loading-text delayed-reveal scramble-text" data-text="Az oldal hanggal működik.">Az oldal hanggal működik.</div></div>
+                    <div class="text-mask"><div class="loading-text delayed-reveal scramble-text" data-text="Később bármikor némíthatod.">Később bármikor némíthatod.</div></div>
+                </div>
+                
+                <video id="loading-video" src="LoadingLogo.mp4" muted playsinline></video>
+                
+                <div class="text-group">
+                    <div class="text-mask"><div class="loading-text delayed-reveal scramble-text" data-text="Fogadd szeretettel a Kreatív és Kézművesipari Technikum">Fogadd szeretettel a Kreatív és Kézművesipari Technikum</div></div>
+                    <div class="text-mask"><div class="loading-text delayed-reveal scramble-text" data-text="2025-26-os esti osztályának vizsgamunkáit!">2025-26-os esti osztályának vizsgamunkáit!</div></div>
+                </div>
+                
+                <div class="text-mask" style="margin-top: 1rem;">
+                    <button class="proceed-btn delayed-reveal" id="proceed-btn">Folytatás</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <canvas id="bg-canvas"></canvas>
+    <!-- OPTIMIZATION: Deleted #webgl-canvas entirely -->
+    <div id="gallery"></div>
+
+    <div class="floating-tooltip" id="cursor-tooltip">
+        <div class="tooltip-mask" id="tt-mask">
+            <div class="tt-top-row">
+                <div class="tt-text-mask"><div class="tt-title" id="tt-title">Name</div></div>
+            </div>
+            <div class="tt-bottom-row">
+                <div class="tt-category-wrap tt-text-mask"><div class="tt-category" id="tt-category">Category</div></div>
+                <div class="tt-arrow-box"><div class="tt-arrow" id="tt-arrow"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI Overlay (Persists post-load) -->
+    <div class="ui-layer">
+        <div class="logo-container">
+            <a href="https://kreativtechnikum.hu/" class="clickable-element">
+                <img src="logo.svg" alt="Kreatív és Kézművesipari Technikum" class="logo-img" onerror="this.src='https://placehold.co/100x36/000/fff?text=LOGO'">
+            </a>
+            <button class="sound-switch is-on" id="sound-toggle">
+                <div class="switch-block"></div>
+                <div class="switch-text-container">
+                    <span class="text-on">HANG</span>
+                    <span class="text-off">CSEND</span>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            
+            let isDesktop = window.innerWidth >= 768;
+
+            // --- AUDIO SETUP ---
+            let isSoundEnabled = sessionStorage.getItem('isSoundEnabled') !== 'false';
+            let isAudioUnlocked = false; 
+            const bgMusic = new Audio('chime.mp3');
+            bgMusic.loop = true; 
+            bgMusic.volume = 0.4; 
+
+            const savedTime = sessionStorage.getItem('bgMusicTime');
+            if (savedTime !== null) bgMusic.currentTime = parseFloat(savedTime);
+            window.addEventListener('beforeunload', () => {
+                sessionStorage.setItem('bgMusicTime', bgMusic.currentTime);
+                sessionStorage.setItem('isSoundEnabled', isSoundEnabled);
+            });
+
+            const tickSoundURL = 'ScreenRecording_08-09-2026 20-40-07_1.mp3'; 
+            const audioPool = [];
+            const poolSize = 10; 
+            let poolIndex = 0;
+            for (let i = 0; i < poolSize; i++) {
+                const a = new Audio(tickSoundURL);
+                a.volume = 0.1; 
+                audioPool.push(a);
+            }
+
+            const tingSoundURL = 'ting.mp3'; 
+            const tingAudioPool = [];
+            const tingPoolSize = 5; 
+            let tingPoolIndex = 0;
+            for (let i = 0; i < tingPoolSize; i++) {
+                const a = new Audio(tingSoundURL);
+                a.volume = 0.3; 
+                tingAudioPool.push(a);
+            }
+
+            const tryUnlockAudio = () => {
+                if (isAudioUnlocked) return;
+                audioPool.forEach(a => { const p = a.play(); if (p) p.then(() => { a.pause(); a.currentTime = 0; }).catch(() => {}); });
+                tingAudioPool.forEach(a => { const p = a.play(); if (p) p.then(() => { a.pause(); a.currentTime = 0; }).catch(() => {}); });
+
+                if (isSoundEnabled) {
+                    const bgPromise = bgMusic.play();
+                    if (bgPromise !== undefined) {
+                        bgPromise.then(() => {
+                            isAudioUnlocked = true;
+                            ['pointerdown', 'touchstart', 'keydown', 'wheel', 'mousemove'].forEach(e => window.removeEventListener(e, tryUnlockAudio));
+                        }).catch(() => { isAudioUnlocked = false; });
+                    }
+                } else {
+                    isAudioUnlocked = true; 
+                }
+            };
+
+            if (isSoundEnabled) {
+                bgMusic.play().then(() => { isAudioUnlocked = true; }).catch(() => {
+                    ['pointerdown', 'touchstart', 'keydown', 'wheel', 'mousemove'].forEach(e => window.addEventListener(e, tryUnlockAudio, { passive: true }));
+                });
+            }
+
+            function playTingSound(pitchRate = 1.0) {
+                if (!isAudioUnlocked || !isSoundEnabled) return;
+                const a = tingAudioPool[tingPoolIndex];
+                a.playbackRate = pitchRate; a.currentTime = 0; 
+                const p = a.play(); if (p) p.catch(() => {}); 
+                tingPoolIndex = (tingPoolIndex + 1) % tingPoolSize; 
+            }
+            
+            function playTickSound() {
+                if (!isAudioUnlocked || !isSoundEnabled) return;
+                const a = audioPool[poolIndex];
+                a.currentTime = 0; 
+                const p = a.play(); if (p) p.catch(() => {}); 
+                poolIndex = (poolIndex + 1) % poolSize; 
+            }
+
+            const soundToggleBtn = document.getElementById('sound-toggle');
+            if (!isSoundEnabled) { soundToggleBtn.classList.remove('is-on'); soundToggleBtn.classList.add('is-off'); }
+
+            soundToggleBtn.addEventListener('click', () => {
+                tryUnlockAudio();
+                isSoundEnabled = !isSoundEnabled;
+                sessionStorage.setItem('isSoundEnabled', isSoundEnabled);
+                if (isSoundEnabled) {
+                    soundToggleBtn.classList.remove('is-off'); soundToggleBtn.classList.add('is-on');
+                    bgMusic.play().catch(() => {});
+                } else {
+                    soundToggleBtn.classList.remove('is-on'); soundToggleBtn.classList.add('is-off');
+                    bgMusic.pause();
+                }
+            });
+
+            // --- CUSTOM CURSOR ---
+            const customCursor = document.getElementById('custom-cursor');
+            const cursorIcon = document.getElementById('cursor-icon');
+            const cPlus2 = document.getElementById('c-plus-2');
+            const cursorGif = document.getElementById('cursor-bg-gif');
+            let isCursorHovering = false;
+            let hoverTimeline = null;
+            
+            window.addEventListener('mousemove', (e) => {
+                if(isDesktop) customCursor.style.transform = `translate3d(${e.clientX - 70}px, ${e.clientY - 70}px, 0)`;
+            });
+
+            document.addEventListener('mouseover', (e) => {
+                if (!isDesktop) return;
+                const target = e.target.closest('a, button, .tt-arrow-box, .menu-item.highlight, .sound-switch');
+                if (target && !isCursorHovering) {
+                    isCursorHovering = true;
+                    gsap.to(cursorGif, { scale: 1.6, duration: 0.3, ease: "power2.out" });
+                    if (hoverTimeline) hoverTimeline.kill();
+                    hoverTimeline = gsap.timeline();
+                    hoverTimeline.to(cPlus2, { rotation: 45, duration: 0.15, ease: "back.out(2)" })
+                    .to(cursorIcon, { rotation: "+=360", duration: 3, repeat: -1, ease: "linear" });
+                }
+            });
+
+            document.addEventListener('mouseout', (e) => {
+                if (!isDesktop) return;
+                const target = e.target.closest('a, button, .tt-arrow-box, .menu-item.highlight, .sound-switch');
+                if (target && isCursorHovering) {
+                    if (e.relatedTarget && e.relatedTarget.closest('a, button, .tt-arrow-box, .menu-item.highlight, .sound-switch')) return;
+                    isCursorHovering = false;
+                    gsap.to(cursorGif, { scale: 1.0, duration: 0.3, ease: "power2.out" });
+                    if (hoverTimeline) hoverTimeline.kill();
+                    let currentRot = gsap.getProperty(cursorIcon, "rotation") || 0;
+                    let targetRot = Math.round(currentRot / 90) * 90;
+                    gsap.to(cursorIcon, { rotation: targetRot, duration: 0.3, ease: "power2.out", overwrite: "auto" });
+                    gsap.to(cPlus2, { rotation: 0, duration: 0.3, ease: "power2.out", overwrite: "auto" });
+                }
+            });
+
+            // --- LOADING LOGIC ---
+            let isAppLoaded = false;
+            let isTransitioning = false;
+            let interactionsEnabled = false; 
+
+            const manager = new THREE.LoadingManager();
+            manager.onLoad = () => { isAppLoaded = true; };
+            window.addEventListener('load', () => { isAppLoaded = true; });
+
+            const video = document.getElementById('loading-video');
+            const proceedBtn = document.getElementById('proceed-btn');
+            let isPromptShowing = false;
+            
+            const hasPlayedIntro = sessionStorage.getItem('introPlayed');
+
+            if (hasPlayedIntro) {
+                const bottomBar = document.getElementById('main-bottom-bar');
+                const uiLayer = document.querySelector('.ui-layer');
+                const overlay = document.getElementById('loading-overlay');
+                
+                if (bottomBar && uiLayer) {
+                    uiLayer.appendChild(bottomBar);
+                    bottomBar.classList.remove('is-loading');
+                    bottomBar.classList.add('is-fixed');
+                    if (overlay) overlay.remove(); 
+                    
+                    const curtain = document.createElement('div');
+                    curtain.className = 'transition-curtain';
+                    curtain.style.position = 'absolute'; curtain.style.top = '100%'; curtain.style.left = '0';
+                    curtain.style.width = '100vw'; curtain.style.height = '120vh'; curtain.style.backgroundColor = '#000'; curtain.style.zIndex = '-1';
+                    bottomBar.appendChild(curtain);
+                    
+                    gsap.set(bottomBar, { y: () => -window.innerHeight });
+                    gsap.to(bottomBar, {
+                        y: 0, duration: 1.2, ease: 'power3.inOut', delay: 0.1,
+                        onComplete: () => { curtain.remove(); interactionsEnabled = true; gsap.set(bottomBar, { clearProps: "transform" }); }
+                    });
+                } else {
+                    if (overlay) overlay.remove();
+                    interactionsEnabled = true;
+                }
+                isAppLoaded = true;
+            } else {
+                proceedBtn.addEventListener('click', () => {
+                    tryUnlockAudio();
+                    sessionStorage.setItem('introPlayed', 'true'); 
+                    if (isTransitioning) return;
+                    isTransitioning = true;
+                    
+                    const executeTransition = () => {
+                        const overlay = document.getElementById('loading-overlay');
+                        const bottomBar = document.getElementById('main-bottom-bar');
+                        const uiLayer = document.querySelector('.ui-layer');
+                        const promptContent = document.getElementById('loading-prompt-content');
+
+                        gsap.to(promptContent, {
+                            opacity: 0,
+                            duration: 0.4,
+                            onComplete: () => {
+                                if(bottomBar && uiLayer) {
+                                    uiLayer.appendChild(bottomBar);
+                                    bottomBar.classList.remove('is-loading'); bottomBar.classList.add('is-fixed');
+                                    
+                                    const curtain = document.createElement('div');
+                                    curtain.className = 'transition-curtain'; curtain.style.position = 'absolute'; curtain.style.top = '100%';
+                                    curtain.style.left = '0'; curtain.style.width = '100vw'; curtain.style.height = '120vh'; curtain.style.backgroundColor = '#000'; curtain.style.zIndex = '-1';
+                                    bottomBar.appendChild(curtain);
+                                    
+                                    gsap.set(bottomBar, { y: () => -window.innerHeight });
+                                    if(overlay) overlay.remove(); 
+                                    
+                                    gsap.to(bottomBar, {
+                                        y: 0, duration: 1.2, ease: 'power3.inOut',
+                                        onComplete: () => {
+                                            curtain.remove(); interactionsEnabled = true; isTransitioning = false; 
+                                            gsap.set(bottomBar, { clearProps: "transform" });
+                                        }
+                                    });
+                                } else {
+                                    if(overlay) overlay.remove(); 
+                                    interactionsEnabled = true; isTransitioning = false; 
+                                }
+                            }
+                        });
+                    };
+
+                    if (!isAppLoaded) {
+                        proceedBtn.textContent = "LOADING...";
+                        const checkInterval = setInterval(() => { if (isAppLoaded) { clearInterval(checkInterval); executeTransition(); } }, 100);
+                        setTimeout(() => { clearInterval(checkInterval); if(document.getElementById('loading-overlay')) executeTransition(); }, 2500); 
+                    } else { executeTransition(); }
+                });
+
+                if (video) {
                     video.addEventListener('ended', () => { if (!isPromptShowing) { isPromptShowing = true; triggerRevealAnimation(); } video.play(); });
                     video.play().catch(() => { if (!isPromptShowing) { isPromptShowing = true; triggerRevealAnimation(); } });
                 }
