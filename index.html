@@ -1599,6 +1599,13 @@
             let mouseX = -1000;
             let mouseY = -1000;
             
+            let ttW = 300, ttH = 60;
+            const measureTooltip = () => {
+                const r = tooltip.getBoundingClientRect();
+                if (r.width) { ttW = r.width; ttH = r.height; }
+            };
+            const requestTooltipMeasure = () => requestAnimationFrame(measureTooltip);
+
             let xTo = gsap.quickTo(tooltip, "x", {duration: 0.15, ease: "power2.out"});
             let yTo = gsap.quickTo(tooltip, "y", {duration: 0.15, ease: "power2.out"});
 
@@ -1609,11 +1616,8 @@
                 
                 let targetX = mouseX + 15;
                 let targetY = mouseY + 15;
-                const tWidth = tooltip.offsetWidth;
-                const tHeight = tooltip.offsetHeight;
-                
-                if (targetX + tWidth > window.innerWidth - 10) targetX = mouseX - tWidth - 15;
-                if (targetY + tHeight > window.innerHeight - 10) targetY = mouseY - tHeight - 15;
+                if (targetX + ttW > VW - 10) targetX = mouseX - ttW - 15;
+                if (targetY + ttH > VH - 10) targetY = mouseY - ttH - 15;
                 
                 xTo(targetX);
                 yTo(targetY);
@@ -1704,6 +1708,7 @@
                 
                 tooltipTitle.textContent = data.name;
                 tooltipCategory.textContent = data.title;
+                requestTooltipMeasure();
                 
                 gsap.killTweensOf(tooltip, "opacity,visibility,autoAlpha");
                 gsap.killTweensOf([tooltipMask, tooltipTitle, tooltipCategory, tooltipArrow]);
@@ -1744,13 +1749,13 @@
                     const wave = Math.sin((t - 0.05) * Math.PI * 2);
                     const stretch = Math.abs(wave);
                     x = -0.1 + (t * 1.0); 
-                    const baseW = window.innerWidth * 0.18;
-                    const baseH = window.innerHeight * 0.32;
+                    const baseW = VW * 0.18;
+                    const baseH = VH * 0.32;
                     wPx = baseW * (1 + stretch * 0.85);
                     hPx = baseH * (1 - stretch * 0.15);
-                    const bottomBarPx = Math.max(100, Math.min(window.innerHeight * 0.14, 160));
-                    const bottomBarTopRatio = (window.innerHeight - bottomBarPx) / window.innerHeight;
-                    const maxImageHalfHeightRatio = (baseH * 0.85 / 2) / window.innerHeight;
+                    const bottomBarPx = Math.max(100, Math.min(VH * 0.14, 160));
+                    const bottomBarTopRatio = (VH - bottomBarPx) / VH;
+                    const maxImageHalfHeightRatio = (baseH * 0.85 / 2) / VH;
                     const maxY = bottomBarTopRatio - maxImageHalfHeightRatio;
                     const minY = maxImageHalfHeightRatio + 0.01; 
                     const centerY = (maxY + minY) / 2;
@@ -1764,8 +1769,8 @@
                     const wave = Math.sin((t - 0.02) * Math.PI * 4);
                     const stretch = Math.abs(wave);
                     x = 0.5 + (wave * 0.25);
-                    const baseW = window.innerWidth * 0.55;
-                    const baseH = window.innerHeight * 0.22;
+                    const baseW = VW * 0.55;
+                    const baseH = VH * 0.22;
                     wPx = baseW * (1 - stretch * 0.15);
                     hPx = baseH * (1 + stretch * 0.40);
                     if (t < 0.05) o = t / 0.05; 
@@ -1809,20 +1814,74 @@
                 touchStartY = touchY;
             }, { passive: true });
 
+            let VW = window.innerWidth;
+            let VH = window.innerHeight;
+
             const ITEM_BASE_W = 400;
             const ITEM_BASE_H = 267;
 
             const clock = new THREE.Clock();
+            const lineSpeeds = vLines.map((_, i) => 0.4 * Math.pow(0.92, i));
+            const lineAmps = vLines.map((_, i) => 12 * Math.pow(0.9, i));
+            const LINE_FRAME_TIME = 1 / 30;
+            let lineAccumulator = 0;
             let bgAccumulator = 0;
             const bgFrameTime = 1 / PERF.bgFps;
             let lastFrameTime = 0;
             let rafId = null;
+
+            const QUALITY_STEPS = [1.5, 1.25, 1.0, 0.85, 0.7];
+            let qualityIndex = QUALITY_STEPS.findIndex(v => v <= PERF.scenePixelRatio);
+            if (qualityIndex < 0) qualityIndex = QUALITY_STEPS.length - 1;
+            let fpsSamples = 0;
+            let fpsTime = 0;
+            let stableGoodSeconds = 0;
+
+            function applyQuality() {
+                const ratio = Math.min(QUALITY_STEPS[qualityIndex], PERF.dpr);
+                renderer.setPixelRatio(ratio);
+                renderer.setSize(VW, VH);
+                bgRenderer.setPixelRatio(Math.min(PERF.bgPixelRatio, ratio));
+                bgRenderer.setSize(VW, VH, false);
+                bgCanvas.style.width = '100vw';
+                bgCanvas.style.height = '100vh';
+                bgMaterial.uniforms.uResolution.value.set(
+                    VW * bgRenderer.getPixelRatio(),
+                    VH * bgRenderer.getPixelRatio()
+                );
+                if (qualityIndex >= 2) document.body.classList.add('perf-low');
+                else if (PERF.heavyShadows) document.body.classList.remove('perf-low');
+            }
+
+            function monitorPerformance(dt) {
+                fpsSamples++;
+                fpsTime += dt;
+                if (fpsTime < 1) return;
+                const fps = fpsSamples / fpsTime;
+                fpsSamples = 0;
+                fpsTime = 0;
+                if (fps < 50 && qualityIndex < QUALITY_STEPS.length - 1) {
+                    qualityIndex++;
+                    stableGoodSeconds = 0;
+                    applyQuality();
+                } else if (fps > 58) {
+                    stableGoodSeconds++;
+                    if (stableGoodSeconds > 8 && qualityIndex > 0) {
+                        qualityIndex--;
+                        stableGoodSeconds = 0;
+                        applyQuality();
+                    }
+                } else {
+                    stableGoodSeconds = 0;
+                }
+            }
 
             function render() {
                 rafId = requestAnimationFrame(render);
                 const time = clock.getElapsedTime();
                 const dt = Math.min(time - lastFrameTime, 0.1);
                 lastFrameTime = time;
+                monitorPerformance(dt);
                 
                 targetScroll += 0.8; 
                 
@@ -1849,12 +1908,19 @@
                     }
                 }
 
-                vLines.forEach((line, i) => {
-                    const speed = 0.4 * Math.pow(0.92, i);
-                    const phase = (time * speed) + (currentScroll * 0.01);
-                    const amplitude = 12 * Math.pow(0.9, i);
-                    line.style.transform = `translateX(${Math.sin(phase) * amplitude}px)`;
-                });
+                lineAccumulator += dt;
+                if (lineAccumulator >= LINE_FRAME_TIME) {
+                    lineAccumulator = 0;
+                    for (let i = 0; i < vLines.length; i++) {
+                        const line = vLines[i];
+                        const phase = (time * lineSpeeds[i]) + (currentScroll * 0.01);
+                        const x = Math.round(Math.sin(phase) * lineAmps[i] * 10) / 10;
+                        if (line._x !== x) {
+                            line._x = x;
+                            line.style.transform = `translate3d(${x}px,0,0)`;
+                        }
+                    }
+                }
 
                 const globalOffset = currentScroll / 4000;
                 let topHoverIndex = -1;
@@ -1868,8 +1934,8 @@
                     if (t < 0) t = (t % 2.0) + 2.0; 
 
                     const state = getInterpolatedState(t);
-                    const xPx = state.x * window.innerWidth;
-                    const yPx = state.y * window.innerHeight;
+                    const xPx = state.x * VW;
+                    const yPx = state.y * VH;
                     const finalW = state.wPx;
                     const finalH = state.hPx;
                     
@@ -1889,8 +1955,8 @@
                                 }
                             }
                         } else {
-                            const screenCenterX = window.innerWidth / 2;
-                            const screenCenterY = (window.innerHeight - 90) / 2; 
+                            const screenCenterX = VW / 2;
+                            const screenCenterY = (VH - 90) / 2; 
                             const dist = Math.hypot(xPx - screenCenterX, yPx - screenCenterY);
                             if (dist < minDist && dist < 180) {
                                 minDist = dist;
@@ -1922,7 +1988,7 @@
                     const op = Math.round(cState.o * 100) / 100;
                     if (iState.lastO !== op) { item.style.opacity = op; iState.lastO = op; }
 
-                    mesh.position.set(cState.xPx - innerWidth / 2, -(cState.yPx - innerHeight / 2), finalZ);
+                    mesh.position.set(cState.xPx - VW / 2, -(cState.yPx - VH / 2), finalZ);
                     mesh.scale.set(cState.finalW, cState.finalH, 1);
                     mesh.material.uniforms.uOpacity.value = cState.o * iState.webglAlpha;
                     mesh.material.uniforms.uMeshSize.value.set(cState.finalW, cState.finalH);
@@ -1934,20 +2000,22 @@
                         const effectY = isDesktop ? mouseY : cState.yPx;
                         const uvX = (effectX - left) / cState.finalW;
                         const uvY = 1.0 - ((effectY - top) / cState.finalH);
-                        gsap.to(mesh.material.uniforms.uMouse.value, { x: uvX, y: uvY, duration: 0.1, overwrite: 'auto' });
+                        const mu = mesh.material.uniforms.uMouse.value;
+                        mu.x += (uvX - mu.x) * 0.25;
+                        mu.y += (uvY - mu.y) * 0.25;
                     }
                 });
 
                 if (!isDesktop && currentHoveredIndex !== -1) {
-                    const tWidth = tooltip.offsetWidth || 300;
-                    const tHeight = tooltip.offsetHeight || 60;
-                    xTo(window.innerWidth / 2 - tWidth / 2);
-                    yTo(window.innerHeight - 90 - tHeight - 20); 
+                    xTo(VW / 2 - ttW / 2);
+                    yTo(VH - 90 - ttH - 20); 
                 }
 
                 renderer.render(scene, camera);
             }
 
+            applyQuality();
+            requestTooltipMeasure();
             render();
 
             // Stop all GPU work while the tab is in the background.
@@ -1968,6 +2036,9 @@
             });
 
             function onResize() {
+                VW = window.innerWidth;
+                VH = window.innerHeight;
+                measureTooltip();
                 bgCamera.updateProjectionMatrix();
                 bgRenderer.setSize(window.innerWidth, window.innerHeight, false);
                 bgCanvas.style.width = '100vw';
@@ -1982,7 +2053,7 @@
                 camera.top = window.innerHeight / 2;
                 camera.bottom = window.innerHeight / -2;
                 camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
+                applyQuality();
 
                 const currentIsDesktop = window.innerWidth >= 768;
                 if(isDesktop !== currentIsDesktop) {
